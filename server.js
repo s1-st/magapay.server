@@ -27,7 +27,8 @@ app.post("/stkpush", async (req, res) => {
           email: process.env.MEGAPAY_EMAIL,
           msisdn,
           amount,
-          reference
+          reference,
+          account_name: "CASHNEST"
         })
       }
     );
