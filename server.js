@@ -72,8 +72,10 @@ app.post("/stkpush", async (req, res) => {
    CALLBACK (IMPORTANT)
 ========================= */
 app.post("/stk-callback", async (req, res) => {
-  try {
-    const data = req.body;
+  console.log("Webhook received:", req.body);
+
+  res.json({ success: true });
+});
 
     console.log("Callback received:", data);
 
