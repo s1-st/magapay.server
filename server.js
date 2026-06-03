@@ -69,15 +69,13 @@ app.post("/stkpush", async (req, res) => {
 });
 
 /* =========================
-   CALLBACK (IMPORTANT)
+   CALLBACK (FIXED)
 ========================= */
 app.post("/stk-callback", async (req, res) => {
-  console.log("Webhook received:", req.body);
+  try {
+    const data = req.body;
 
-  res.json({ success: true });
-});
-
-    console.log("Callback received:", data);
+    console.log("Webhook received:", data);
 
     await Transaction.create({
       msisdn: data.msisdn,
