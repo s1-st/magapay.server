@@ -16,6 +16,19 @@ mongoose.connect(process.env.MONGO_URL)
 .catch(err => console.log(err));
 
 /* =========================
+   USER MODEL
+========================= */
+const userSchema = new mongoose.Schema({
+  name: String,
+  phone: String,
+  email: String,
+  password: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model("User", userSchema);
+
+/* =========================
    TRANSACTION MODEL
 ========================= */
 const transactionSchema = new mongoose.Schema({
@@ -29,10 +42,79 @@ const transactionSchema = new mongoose.Schema({
 const Transaction = mongoose.model("Transaction", transactionSchema);
 
 /* =========================
-   HOME ROUTE
+   HOME
 ========================= */
 app.get("/", (req, res) => {
   res.send("MegaPay server is running");
+});
+
+/* =========================
+   SIGNUP
+========================= */
+app.post("/signup", async (req, res) => {
+  try {
+    const { name, phone, email, password } = req.body;
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.json({ success: false, message: "User already exists" });
+    }
+
+    await User.create({ name, phone, email, password });
+
+    res.json({ success: true, message: "Account created successfully" });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/* =========================
+   LOGIN
+========================= */
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email, password });
+
+    if (!user) {
+      return res.json({ success: false, message: "Invalid credentials" });
+    }
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      name: user.name,
+      phone: user.phone,
+      email: user.email
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/* =========================
+   GET USER
+========================= */
+app.get("/user", async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, user });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 });
 
 /* =========================
@@ -46,9 +128,7 @@ app.post("/stkpush", async (req, res) => {
       "https://megapay.co.ke/backend/v1/initiatestk",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           api_key: process.env.MEGAPAY_API_KEY,
           email: process.env.MEGAPAY_EMAIL,
@@ -69,7 +149,7 @@ app.post("/stkpush", async (req, res) => {
 });
 
 /* =========================
-   CALLBACK (FIXED)
+   CALLBACK
 ========================= */
 app.post("/stk-callback", async (req, res) => {
   try {
@@ -87,13 +167,12 @@ app.post("/stk-callback", async (req, res) => {
     res.json({ message: "Transaction saved" });
 
   } catch (err) {
-    console.log(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 /* =========================
-   GET TRANSACTIONS
+   TRANSACTIONS
 ========================= */
 app.get("/transactions/:msisdn", async (req, res) => {
   try {
