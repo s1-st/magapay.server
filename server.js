@@ -102,18 +102,29 @@ app.post("/login", async (req, res) => {
 ========================= */
 app.get("/user", async (req, res) => {
   try {
-    const { email } = req.query;
+    const email = req.query.email;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email required" });
+    }
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({
+        name: "User",
+        balance: 0
+      });
     }
 
-    res.json({ success: true, user });
+    return res.json({
+      name: user.name,
+      balance: user.balance
+    });
 
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.log(err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
