@@ -23,7 +23,14 @@ const userSchema = new mongoose.Schema({
   phone: String,
   email: String,
   password: String,
-  createdAt: { type: Date, default: Date.now }
+  balance: {
+    type: Number,
+    default: 0
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
 const User = mongoose.model("User", userSchema);
@@ -105,29 +112,33 @@ app.get("/user", async (req, res) => {
     const email = req.query.email;
 
     if (!email) {
-      return res.status(400).json({ error: "Email required" });
+      return res.status(400).json({
+        error: "Email required"
+      });
     }
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.json({
-        name: "User",
-        balance: 0
+      return res.status(404).json({
+        error: "User not found"
       });
     }
 
-    return res.json({
+    res.json({
       name: user.name,
-      balance: user.balance
+      email: user.email,
+      phone: user.phone,
+      balance: user.balance || 0
     });
 
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "Server error" });
+    console.error(err);
+    res.status(500).json({
+      error: "Server error"
+    });
   }
 });
-
 /* =========================
    STK PUSH
 ========================= */
