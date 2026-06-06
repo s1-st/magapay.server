@@ -201,19 +201,31 @@ app.post("/stk-callback", async (req, res) => {
       data.phone ||
       data.customer?.phone ||
       data.data?.msisdn ||
-      "UNKNOWN";
+      null;
 
     const amount =
-      data.amount ||
-      data.data?.amount ||
-      0;
+      Number(data.amount || data.data?.amount || 0);
 
     const reference =
       data.reference ||
       data.transaction_id ||
       data.data?.reference ||
-      "N/A";
+      null;
 
+    if (!reference) {
+      console.log("❌ Missing reference - skipping");
+      return res.json({ skipped: true });
+    }
+
+    // 🔥 CHECK DUPLICATE TRANSACTION (VERY IMPORTANT)
+    const existing = await Transaction.findOne({ reference });
+
+    if (existing) {
+      console.log("⚠️ Duplicate transaction ignored:", reference);
+      return res.json({ duplicate: true });
+    }
+
+    // 1. SAVE TRANSACTION
     const transaction = await Transaction.create({
       msisdn,
       amount,
@@ -222,6 +234,18 @@ app.post("/stk-callback", async (req, res) => {
     });
 
     console.log("✅ Transaction saved:", transaction._id);
+
+    // 2. UPDATE USER BALANCE
+    const user = await User.findOne({ phone: msisdn });
+
+    if (user) {
+      user.balance += amount;
+      await user.save();
+
+      console.log("💰 Balance updated for:", msisdn);
+    } else {
+      console.log("⚠️ User not found for phone:", msisdn);
+    }
 
     res.json({ success: true });
 
