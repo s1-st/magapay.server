@@ -191,34 +191,41 @@ app.post("/stkpush", async (req, res) => {
 ========================= */
 app.post("/stk-callback", async (req, res) => {
   try {
+    console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
+
     const data = req.body;
 
-    console.log("Webhook received:", JSON.stringify(data, null, 2));
+    const msisdn =
+      data.msisdn ||
+      data.phone ||
+      data.phoneNumber ||
+      data.customer?.phone ||
+      data.data?.msisdn;
+
+    const amount = data.amount || data.data?.amount;
+    const reference = data.reference || data.transaction_id || "N/A";
+
+    if (!msisdn) {
+      console.log("❌ Missing msisdn in webhook");
+      return res.status(400).json({ error: "Missing msisdn" });
+    }
 
     const transaction = await Transaction.create({
-      msisdn: data.msisdn || data.phone || "",
-      amount: Number(data.amount || 0),
-      reference: data.reference || data.transaction_id || "",
-      status: data.status || "SUCCESS"
+      msisdn,
+      amount,
+      reference,
+      status: "SUCCESS"
     });
 
-    console.log("Transaction saved:", transaction._id);
+    console.log("✅ Transaction saved:", transaction._id);
 
-    res.status(200).json({
-      success: true,
-      message: "Transaction saved"
-    });
+    res.json({ success: true });
 
   } catch (err) {
-    console.error("Callback Error:", err);
-
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    console.error("Callback error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
-
 /* =========================
    TRANSACTIONS
 ========================= */
