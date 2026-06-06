@@ -197,18 +197,22 @@ app.post("/stk-callback", async (req, res) => {
 
     const msisdn =
       data.msisdn ||
-      data.phone ||
       data.phoneNumber ||
+      data.phone ||
       data.customer?.phone ||
-      data.data?.msisdn;
+      data.data?.msisdn ||
+      "UNKNOWN";
 
-    const amount = data.amount || data.data?.amount;
-    const reference = data.reference || data.transaction_id || "N/A";
+    const amount =
+      data.amount ||
+      data.data?.amount ||
+      0;
 
-    if (!msisdn) {
-      console.log("❌ Missing msisdn in webhook");
-      return res.status(400).json({ error: "Missing msisdn" });
-    }
+    const reference =
+      data.reference ||
+      data.transaction_id ||
+      data.data?.reference ||
+      "N/A";
 
     const transaction = await Transaction.create({
       msisdn,
