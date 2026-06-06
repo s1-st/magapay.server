@@ -39,28 +39,22 @@ const User = mongoose.model("User", userSchema);
    TRANSACTION MODEL
 ========================= */
 const transactionSchema = new mongoose.Schema({
-  msisdn: {
-    type: String,
-    required: true
-  },
-  amount: {
-    type: Number,
-    required: true
-  },
-  reference: {
-    type: String,
-    default: ""
-  },
-  status: {
-    type: String,
-    default: "SUCCESS"
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+  msisdn: { type: String, required: true },
+  amount: { type: Number, required: true },
 
+  type: {
+    type: String,
+    enum: ["DEPOSIT", "WITHDRAW", "INVESTMENT", "REFERRAL"],
+    default: "DEPOSIT"
+  },
+
+  reference: { type: String, required: true, unique: true },
+  status: { type: String, default: "SUCCESS" },
+
+  balanceAfter: { type: Number, default: 0 },
+
+  createdAt: { type: Date, default: Date.now }
+});
 const Transaction = mongoose.model("Transaction", transactionSchema);
 
 /* =========================
@@ -200,52 +194,51 @@ app.post("/stk-callback", async (req, res) => {
       data.phoneNumber ||
       data.phone ||
       data.customer?.phone ||
-      data.data?.msisdn ||
-      null;
+      data.data?.msisdn;
 
-    const amount =
-      Number(data.amount || data.data?.amount || 0);
+    const amount = Number(data.amount || data.data?.amount || 0);
 
     const reference =
       data.reference ||
       data.transaction_id ||
-      data.data?.reference ||
-      null;
+      data.data?.reference;
 
     if (!reference) {
-      console.log("❌ Missing reference - skipping");
+      console.log("Missing reference");
       return res.json({ skipped: true });
     }
 
-    // 🔥 CHECK DUPLICATE TRANSACTION (VERY IMPORTANT)
-    const existing = await Transaction.findOne({ reference });
-
-    if (existing) {
-      console.log("⚠️ Duplicate transaction ignored:", reference);
+    // 1. CHECK DUPLICATE
+    const exists = await Transaction.findOne({ reference });
+    if (exists) {
+      console.log("Duplicate ignored:", reference);
       return res.json({ duplicate: true });
     }
 
-    // 1. SAVE TRANSACTION
-    const transaction = await Transaction.create({
+    // 2. FIND USER
+    const user = await User.findOne({ phone: msisdn });
+
+    if (!user) {
+      console.log("User not found:", msisdn);
+      return res.json({ error: "User not found" });
+    }
+
+    // 3. UPDATE BALANCE
+    user.balance += amount;
+    await user.save();
+
+    // 4. SAVE TRANSACTION WITH BALANCE SNAPSHOT
+    const tx = await Transaction.create({
       msisdn,
       amount,
       reference,
-      status: "SUCCESS"
+      type: "DEPOSIT",
+      status: "SUCCESS",
+      balanceAfter: user.balance
     });
 
-    console.log("✅ Transaction saved:", transaction._id);
-
-    // 2. UPDATE USER BALANCE
-    const user = await User.findOne({ phone: msisdn });
-
-    if (user) {
-      user.balance += amount;
-      await user.save();
-
-      console.log("💰 Balance updated for:", msisdn);
-    } else {
-      console.log("⚠️ User not found for phone:", msisdn);
-    }
+    console.log("Transaction saved:", tx._id);
+    console.log("New balance:", user.balance);
 
     res.json({ success: true });
 
@@ -259,13 +252,33 @@ app.post("/stk-callback", async (req, res) => {
 ========================= */
 app.get("/transactions/:msisdn", async (req, res) => {
   try {
-    const data = await Transaction.find({ msisdn: req.params.msisdn });
+    const data = await Transaction.find({ msisdn: req.params.msisdn })
+      .sort({ createdAt: -1 });
+
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+app.get("/balance/:phone", async (req, res) => {
+  try {
+    const user = await User.findOne({ phone: req.params.phone });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      balance: user.balance,
+      name: user.name,
+      phone: user.phone
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 /* =========================
    START SERVER
 ========================= */
