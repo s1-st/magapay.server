@@ -166,14 +166,15 @@ app.post("/stkpush", async (req, res) => {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: process.env.MEGAPAY_API_KEY,
-          email: process.env.MEGAPAY_EMAIL,
-          msisdn,
-          amount,
-          reference,
-          account_name: "CASHNEST"
-        })
+       body: JSON.stringify({
+  api_key: process.env.MEGAPAY_API_KEY,
+  email: process.env.MEGAPAY_EMAIL,
+  msisdn,
+  amount,
+  reference,
+  account_name: "CASHNEST",
+  callback_url: "https://megapay-server.onrender.com/stk-callback"
+})
       }
     );
 
