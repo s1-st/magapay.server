@@ -39,11 +39,26 @@ const User = mongoose.model("User", userSchema);
    TRANSACTION MODEL
 ========================= */
 const transactionSchema = new mongoose.Schema({
-  msisdn: String,
-  amount: Number,
-  reference: String,
-  status: String,
-  createdAt: { type: Date, default: Date.now }
+  msisdn: {
+    type: String,
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  reference: {
+    type: String,
+    default: ""
+  },
+  status: {
+    type: String,
+    default: "SUCCESS"
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
 const Transaction = mongoose.model("Transaction", transactionSchema);
@@ -177,19 +192,29 @@ app.post("/stk-callback", async (req, res) => {
   try {
     const data = req.body;
 
-    console.log("Webhook received:", data);
+    console.log("Webhook received:", JSON.stringify(data, null, 2));
 
-    await Transaction.create({
-      msisdn: data.msisdn,
-      amount: data.amount,
-      reference: data.reference,
-      status: "SUCCESS"
+    const transaction = await Transaction.create({
+      msisdn: data.msisdn || data.phone || "",
+      amount: Number(data.amount || 0),
+      reference: data.reference || data.transaction_id || "",
+      status: data.status || "SUCCESS"
     });
 
-    res.json({ message: "Transaction saved" });
+    console.log("Transaction saved:", transaction._id);
+
+    res.status(200).json({
+      success: true,
+      message: "Transaction saved"
+    });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Callback Error:", err);
+
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 });
 
