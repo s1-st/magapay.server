@@ -198,11 +198,18 @@ app.post("/stk-callback", async (req, res) => {
 
     const amount = Number(data.amount || data.data?.amount || 0);
 
-    const reference =
-      data.reference ||
-      data.transaction_id ||
-      data.data?.reference;
-
+  const reference =
+  data.reference ||
+  data.transaction_id ||
+  data.transactionId ||
+  data.checkoutRequestID ||
+  data.id ||
+  data.data?.reference ||
+  data.data?.transaction_id ||
+  data.data?.transactionId ||
+  data.data?.id ||
+  `AUTO-${Date.now()}`;
+     
     if (!reference) {
       console.log("Missing reference");
       return res.json({ skipped: true });
