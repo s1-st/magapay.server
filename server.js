@@ -286,6 +286,22 @@ app.get("/balance/:phone", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.get("/db-count", async (req, res) => {
+  try {
+    const userCount = await User.countDocuments();
+    const transactionCount = await Transaction.countDocuments();
+
+    res.json({
+      users: userCount,
+      transactions: transactionCount
+    });
+
+  } catch (err) {
+    console.log("DB COUNT ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* =========================
    START SERVER
 ========================= */
