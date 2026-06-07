@@ -43,6 +43,9 @@ async function searchUser() {
 }
 
 async function add() {
+
+  console.log("Sending request to admin adjust balance...");
+  
   const amount = Number(document.getElementById("amount").value);
 
   await fetch(API + "/admin/adjust-balance", {
@@ -60,6 +63,9 @@ async function add() {
 }
 
 async function deduct() {
+
+  console.log("Sending request to admin adjust balance...");
+  
   const amount = Number(document.getElementById("amount").value);
 
 await fetch(API + "/admin/adjust-balance", {
