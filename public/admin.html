@@ -62,17 +62,14 @@ async function add() {
 async function deduct() {
   const amount = Number(document.getElementById("amount").value);
 
-  await fetch(API + "/admin/adjust-balance", {
-    method: "POST",
-    headers: {
-    "Content-Type": "application/json"
-  },
-    body: JSON.stringify({
-      email: selectedEmail,
-      amount: -amount
-    })
-  });
-
+await fetch(API + "/admin/adjust-balance", {
+  method: "POST",
+  headers: headers,
+  body: JSON.stringify({
+    email: selectedEmail,
+    amount: -Number(document.getElementById("amount").value)
+  })
+});
   alert("Balance deducted");
 }
 
