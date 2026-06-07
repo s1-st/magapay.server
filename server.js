@@ -4,7 +4,6 @@ const fetch = require("node-fetch");
 const mongoose = require("mongoose");
 
 const app = express();
-
 app.use(express.static("public"));
 
 app.use(cors());
