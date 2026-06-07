@@ -205,7 +205,7 @@ console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
      
    console.log("MSISDN RECEIVED:", msisdn);
 
-    const amount = Number(data.amount || data.data?.amount || 0);
+    const amount = Number(data.TransactionAmount || data.amount || data.data?.amount || 0);
     console.log("RAW AMOUNT FIELDS:");
     console.log("TransactionAmount:", data.TransactionAmount);
     console.log("amount:", data.amount); 
@@ -236,12 +236,12 @@ console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
     }
 
     // 2. FIND USER
-     console.log("looking for user with phone :", Msisdn); 
+     console.log("looking for user with phone :", msisdn); 
      
-    const user = await User.findOne({ phone: Msisdn });
+    const user = await User.findOne({ phone: msisdn });
 
     if (!user) {
-      console.log("User not found:", Msisdn);
+      console.log("User not found:", msisdn);
       return res.json({ error: "User not found" });
     }
 
