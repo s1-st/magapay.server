@@ -5,10 +5,10 @@ const mongoose = require("mongoose");
 
 const app = express();
 
-app.use(express.static("public"));
-
 app.use(cors());
 app.use(express.json());
+
+app.use(express.static("public"));
 
 /* =========================
    MONGODB CONNECTION
