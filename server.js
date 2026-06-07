@@ -27,6 +27,12 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+
+referralCode: {
+  type: String,
+  default: () => "REF" + Math.floor(100000 + Math.random() * 900000)
+},
+      
   createdAt: {
     type: Date,
     default: Date.now
@@ -320,6 +326,30 @@ app.get("/db-count", async (req, res) => {
   } catch (err) {
     console.log("DB COUNT ERROR:", err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/update-profile", async (req, res) => {
+  try {
+    const { email, name, phone, referralCode } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    user.name = name;
+    user.phone = phone;
+    user.referralCode = referralCode;
+
+    await user.save();
+
+    res.json({ success: true, message: "Profile updated successfully" });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
