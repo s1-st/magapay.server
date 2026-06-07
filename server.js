@@ -196,6 +196,8 @@ app.post("/stk-callback", async (req, res) => {
       data.customer?.phone ||
       data.data?.Msisdn ||
       data.data?.msisdn;
+     
+   console.log("MSISDN RECEIVED:", msisdn);
 
     const amount = Number(data.amount || data.data?.amount || 0);
 
@@ -224,6 +226,8 @@ app.post("/stk-callback", async (req, res) => {
     }
 
     // 2. FIND USER
+     console.log("looking for user with phone :", msisdn); 
+     
     const user = await User.findOne({ phone: msisdn });
 
     if (!user) {
@@ -258,9 +262,9 @@ app.post("/stk-callback", async (req, res) => {
 /* =========================
    TRANSACTIONS
 ========================= */
-app.get("/transactions/:msisdn", async (req, res) => {
+app.get("/transactions/:Msisdn", async (req, res) => {
   try {
-    const data = await Transaction.find({ msisdn: req.params.msisdn })
+    const data = await Transaction.find({ Msisdn: req.params.Msisdn })
       .sort({ createdAt: -1 });
 
     res.json(data);
