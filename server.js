@@ -454,19 +454,27 @@ app.post("/admin/adjust-balance", adminAuth, async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    console.log("BALANCE BEFORE:", user?.balance);
-
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    user.balance += Number(amount);
+    console.log("BALANCE BEFORE:", user.balance);
 
+    user.balance += Number(amount);
     await user.save();
 
     console.log("BALANCE AFTER:", user.balance);
 
-    res.json({
+    // SAVE ADMIN LOG (FIXED POSITION)
+    await AdminLog.create({
+      admin: "MAIN_ADMIN",
+      action: Number(amount) >= 0 ? "ADD" : "DEDUCT",
+      email,
+      amount,
+      balanceAfter: user.balance
+    });
+
+    return res.json({
       success: true,
       newBalance: user.balance
     });
@@ -476,25 +484,6 @@ app.post("/admin/adjust-balance", adminAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-     await AdminLog.create({
-  admin: "MAIN_ADMIN",
-  action: Number(amount) >= 0 ? "ADD" : "DEDUCT",
-  email,
-  amount,
-  balanceAfter: user.balance
-});
-
-    res.json({
-      success: true,
-      newBalance: user.balance
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 app.get("/admin/transactions", adminAuth, async (req, res) => {
   try {
     const tx = await Transaction.find().sort({ createdAt: -1 });
