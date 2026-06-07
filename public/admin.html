@@ -47,7 +47,9 @@ async function add() {
 
   await fetch(API + "/admin/adjust-balance", {
     method: "POST",
-    headers,
+    headers: {
+    "Content-Type": "application/json"
+  },
     body: JSON.stringify({
       email: selectedEmail,
       amount: amount
@@ -62,7 +64,9 @@ async function deduct() {
 
   await fetch(API + "/admin/adjust-balance", {
     method: "POST",
-    headers,
+    headers: {
+    "Content-Type": "application/json"
+  },
     body: JSON.stringify({
       email: selectedEmail,
       amount: -amount
