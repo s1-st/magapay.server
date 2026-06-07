@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const mongoose = require("mongoose");
+const ADMIN_KEY = process.env.ADMIN_KEY;
 
 const app = express();
 
@@ -354,6 +355,132 @@ app.post("/update-profile", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+function adminAuth(req, res, next) {
+  if (req.headers["x-admin-key"] !== ADMIN_KEY) {
+    return res.status(403).json({ error: "Unauthorized Admin Access" });
+  }
+  next();
+}
+
+app.get("/admin/stats", adminAuth, async (req, res) => {
+  try {
+    const users = await User.countDocuments();
+    const transactions = await Transaction.countDocuments();
+
+    const deposits = await Transaction.aggregate([
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+
+    const totalBalance = await User.aggregate([
+      { $group: { _id: null, total: { $sum: "$balance" } } }
+    ]);
+
+    res.json({
+      users,
+      transactions,
+      totalDeposits: deposits[0]?.total || 0,
+      totalBalance: totalBalance[0]?.total || 0
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/admin/users", adminAuth, async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/admin/user", adminAuth, async (req, res) => {
+  try {
+    const search = req.query.search;
+
+    const user = await User.findOne({
+      $or: [
+        { email: search },
+        { phone: search }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(user);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/admin/adjust-balance", adminAuth, async (req, res) => {
+  try {
+    const { email, amount } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    user.balance += Number(amount);
+
+    if (user.balance < 0) user.balance = 0;
+
+    await user.save();
+
+    await Transaction.create({
+      msisdn: user.phone,
+      amount: Math.abs(Number(amount)),
+      reference: "ADMIN-" + Date.now(),
+      type: Number(amount) >= 0 ? "DEPOSIT" : "WITHDRAW",
+      status: "SUCCESS",
+      balanceAfter: user.balance
+    });
+
+     await AdminLog.create({
+  admin: "MAIN_ADMIN",
+  action: Number(amount) >= 0 ? "ADD" : "DEDUCT",
+  email,
+  amount,
+  balanceAfter: user.balance
+});
+
+    res.json({
+      success: true,
+      newBalance: user.balance
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/admin/transactions", adminAuth, async (req, res) => {
+  try {
+    const tx = await Transaction.find().sort({ createdAt: -1 });
+    res.json(tx);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const adminLogSchema = new mongoose.Schema({
+  admin: String,
+  action: String,
+  email: String,
+  amount: Number,
+  balanceAfter: Number,
+  createdAt: { type: Date, default: Date.now }
+});
+
+const AdminLog = mongoose.model("AdminLog", adminLogSchema);
 
 /* =========================
    START SERVER
