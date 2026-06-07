@@ -167,7 +167,7 @@ app.post("/stkpush", async (req, res) => {
   amount,
   reference,
   account_name: "CASHNEST",
-  callback_url: "https://megapay-server.onrender.com/stk-callback"
+  callback_url: "https://magapay-server.onrender.com/stk-callback"
 })
       }
     );
@@ -194,6 +194,7 @@ app.post("/stk-callback", async (req, res) => {
       data.phoneNumber ||
       data.phone ||
       data.customer?.phone ||
+      data.data?.Msisdn ||
       data.data?.msisdn;
 
     const amount = Number(data.amount || data.data?.amount || 0);
