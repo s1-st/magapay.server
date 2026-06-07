@@ -257,7 +257,7 @@ console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
 
     // 4. SAVE TRANSACTION WITH BALANCE SNAPSHOT
     const tx = await Transaction.create({
-      Msisdn,
+      msisdn,
       amount,
       reference,
       type: "DEPOSIT",
@@ -278,9 +278,9 @@ console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
 /* =========================
    TRANSACTIONS
 ========================= */
-app.get("/transactions/:Msisdn", async (req, res) => {
+app.get("/transactions/:msisdn", async (req, res) => {
   try {
-    const data = await Transaction.find({ Msisdn: req.params.Msisdn })
+    const data = await Transaction.find({ msisdn: req.params.msisdn })
       .sort({ createdAt: -1 });
 
     res.json(data);
