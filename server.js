@@ -95,7 +95,23 @@ app.post("/signup", async (req, res) => {
       return res.json({ success: false, message: "User already exists" });
     }
 
-    await User.create({ name, phone, email, password });
+  const referredBy = req.body.referredBy || null;
+
+await User.create({
+  name,
+  phone,
+  email,
+  password,
+  referredBy
+});
+
+// IF USER WAS REFERRED → ADD +1 TO REFERRER
+if (referredBy) {
+  await User.updateOne(
+    { referralCode: referredBy },
+    { $inc: { referrals: 1 } }
+  );
+}
 
     res.json({ success: true, message: "Account created successfully" });
 
