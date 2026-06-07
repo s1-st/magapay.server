@@ -31,6 +31,16 @@ const userSchema = new mongoose.Schema({
     default: 0
   },
 
+   referrals: {
+  type: Number,
+  default: 0
+},
+
+referredBy: {
+  type: String,
+  default: null
+}
+
 referralCode: {
   type: String,
   default: () => "REF" + Math.floor(100000 + Math.random() * 900000)
@@ -481,6 +491,25 @@ const adminLogSchema = new mongoose.Schema({
 });
 
 const AdminLog = mongoose.model("AdminLog", adminLogSchema);
+
+app.get("/referrals/:email", async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.params.email });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      referrals: user.referrals || 0,
+      required: 4,
+      referralCode: user.referralCode
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 /* =========================
    START SERVER
