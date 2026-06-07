@@ -191,6 +191,9 @@ console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
 
     const data = req.body;
 
+     console.log("Msisdn field:", data.Msisdn);
+      console.log("msisdn field:", data.msisdn);
+     
     const msisdn =
       data.msisdn ||
       data.phoneNumber ||
