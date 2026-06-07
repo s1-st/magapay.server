@@ -206,6 +206,10 @@ console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
    console.log("MSISDN RECEIVED:", msisdn);
 
     const amount = Number(data.amount || data.data?.amount || 0);
+    console.log("RAW AMOUNT FIELDS:");
+    console.log("TransactionAmount:", data.TransactionAmount);
+    console.log("amount:", data.amount); 
+    console.log("Final amount:", amount);
 
   const reference =
   data.reference ||
@@ -232,22 +236,28 @@ console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
     }
 
     // 2. FIND USER
-     console.log("looking for user with phone :", msisdn); 
+     console.log("looking for user with phone :", Msisdn); 
      
-    const user = await User.findOne({ phone: msisdn });
+    const user = await User.findOne({ phone: Msisdn });
 
     if (!user) {
-      console.log("User not found:", msisdn);
+      console.log("User not found:", Msisdn);
       return res.json({ error: "User not found" });
     }
 
     // 3. UPDATE BALANCE
+    console.log("AMOUNT RECEIVED:", amount);
+    console.log("CURRENT BALANCE:", user.balance);
+     
     user.balance += amount;
+
+    console.log("BALANCE AFTER UPDATE:", user.balance);
+     
     await user.save();
 
     // 4. SAVE TRANSACTION WITH BALANCE SNAPSHOT
     const tx = await Transaction.create({
-      msisdn,
+      Msisdn,
       amount,
       reference,
       type: "DEPOSIT",
