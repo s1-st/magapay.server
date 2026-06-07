@@ -449,7 +449,12 @@ app.post("/admin/adjust-balance", adminAuth, async (req, res) => {
   try {
     const { email, amount } = req.body;
 
+    console.log("EMAIL:", email);
+    console.log("AMOUNT RECEIVED:", amount);
+
     const user = await User.findOne({ email });
+
+    console.log("BALANCE BEFORE:", user?.balance);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -457,18 +462,20 @@ app.post("/admin/adjust-balance", adminAuth, async (req, res) => {
 
     user.balance += Number(amount);
 
-    if (user.balance < 0) user.balance = 0;
-
     await user.save();
 
-    await Transaction.create({
-      msisdn: user.phone,
-      amount: Math.abs(Number(amount)),
-      reference: "ADMIN-" + Date.now(),
-      type: Number(amount) >= 0 ? "DEPOSIT" : "WITHDRAW",
-      status: "SUCCESS",
-      balanceAfter: user.balance
+    console.log("BALANCE AFTER:", user.balance);
+
+    res.json({
+      success: true,
+      newBalance: user.balance
     });
+
+  } catch (err) {
+    console.log("ERROR:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
      await AdminLog.create({
   admin: "MAIN_ADMIN",
