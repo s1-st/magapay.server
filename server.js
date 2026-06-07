@@ -185,7 +185,9 @@ app.post("/stkpush", async (req, res) => {
 ========================= */
 app.post("/stk-callback", async (req, res) => {
   try {
-    console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
+      console.log("RAW BODY:", req.body);
+      console.log("KEYS:", object.keys(req.body));
+console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
 
     const data = req.body;
 
