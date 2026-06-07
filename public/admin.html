@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+</head>
+<body>
+
+<h2>Admin Dashboard</h2>
+
+<input id="search" placeholder="Email or Phone">
+<button onclick="searchUser()">Search</button>
+
+<div id="user"></div>
+
+<input id="amount" placeholder="Amount">
+<button onclick="add()">Add</button>
+<button onclick="deduct()">Deduct</button>
+
+<script>
+
+const API = "https://megapay-server.onrender.com";
+const ADMIN_KEY = "yourStrongSecret123";
+
+let selectedEmail = "";
+
+const headers = {
+  "Content-Type": "application/json",
+  "x-admin-key": ADMIN_KEY
+};
+
+async function searchUser() {
+  const search = document.getElementById("search").value;
+
+  const res = await fetch(API + "/admin/user?search=" + search, { headers });
+  const data = await res.json();
+
+  selectedEmail = data.email;
+
+  document.getElementById("user").innerHTML =
+    `Name: ${data.name}<br>
+     Phone: ${data.phone}<br>
+     Balance: ${data.balance}`;
+}
+
+async function add() {
+  const amount = Number(document.getElementById("amount").value);
+
+  await fetch(API + "/admin/adjust-balance", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      email: selectedEmail,
+      amount: amount
+    })
+  });
+
+  alert("Balance added");
+}
+
+async function deduct() {
+  const amount = Number(document.getElementById("amount").value);
+
+  await fetch(API + "/admin/adjust-balance", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      email: selectedEmail,
+      amount: -amount
+    })
+  });
+
+  alert("Balance deducted");
+}
+
+</script>
+
+</body>
+</html>
