@@ -88,7 +88,17 @@ app.get("/", (req, res) => {
 ========================= */
 app.post("/signup", async (req, res) => {
   try {
-    const { name, phone, email, password } = req.body;
+   let phone = req.body.phone.trim();
+
+phone = phone.replace(/\s/g, "");
+
+if (phone.startsWith("0")) {
+  phone = "254" + phone.substring(1);
+}
+
+if (phone.startsWith("+")) {
+  phone = phone.substring(1);
+}
 
     const existing = await User.findOne({ email });
     if (existing) {
