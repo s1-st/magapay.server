@@ -10,11 +10,15 @@
 <input id="search" placeholder="Email or Phone">
 <button onclick="searchUser()">Search</button>
 
-<div id="user"></div>
+<div id="user" style="margin-top:10px;"></div>
+
+<hr>
 
 <input id="amount" placeholder="Amount">
-<button onclick="add()">Add</button>
-<button onclick="deduct()">Deduct</button>
+<br><br>
+
+<button onclick="add()">Add Balance</button>
+<button onclick="deduct()">Deduct Balance</button>
 
 <script>
 
@@ -29,54 +33,75 @@ const headers = {
 };
 
 async function searchUser() {
-  const search = document.getElementById("search").value;
+  try {
+    const search = document.getElementById("search").value;
 
-  const res = await fetch(API + "/admin/user?search=" + search, { headers });
-  const data = await res.json();
+    const res = await fetch(API + "/admin/user?search=" + search, {
+      headers
+    });
 
-  selectedEmail = data.email;
+    const data = await res.json();
 
-  document.getElementById("user").innerHTML =
-    `Name: ${data.name}<br>
-     Phone: ${data.phone}<br>
-     Balance: ${data.balance}`;
+    selectedEmail = data.email;
+
+    document.getElementById("user").innerHTML =
+      `
+      <b>Name:</b> ${data.name}<br>
+      <b>Phone:</b> ${data.phone}<br>
+      <b>Email:</b> ${data.email}<br>
+      <b>Balance:</b> ${data.balance}
+      `;
+
+  } catch (err) {
+    console.log(err);
+    alert("User not found");
+  }
 }
 
 async function add() {
 
   console.log("Sending request to admin adjust balance...");
-  
+
   const amount = Number(document.getElementById("amount").value);
 
-  await fetch(API + "/admin/adjust-balance", {
+  if (!selectedEmail) return alert("Search user first");
+
+  const res = await fetch(API + "/admin/adjust-balance", {
     method: "POST",
-    headers: {
-    "Content-Type": "application/json"
-  },
+    headers: headers,
     body: JSON.stringify({
       email: selectedEmail,
       amount: amount
     })
   });
 
-  alert("Balance added");
+  const data = await res.json();
+  console.log(data);
+
+  alert("Balance added successfully");
 }
 
 async function deduct() {
 
   console.log("Sending request to admin adjust balance...");
-  
+
   const amount = Number(document.getElementById("amount").value);
 
-await fetch(API + "/admin/adjust-balance", {
-  method: "POST",
-  headers: headers,
-  body: JSON.stringify({
-    email: selectedEmail,
-    amount: -Number(document.getElementById("amount").value)
-  })
-});
-  alert("Balance deducted");
+  if (!selectedEmail) return alert("Search user first");
+
+  const res = await fetch(API + "/admin/adjust-balance", {
+    method: "POST",
+    headers: headers,
+    body: JSON.stringify({
+      email: selectedEmail,
+      amount: -amount
+    })
+  });
+
+  const data = await res.json();
+  console.log(data);
+
+  alert("Balance deducted successfully");
 }
 
 </script>
