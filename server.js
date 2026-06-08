@@ -268,21 +268,28 @@ app.post("/stk-callback", async (req, res) => {
        (ADAPT THIS TO YOUR PROVIDER)
     ========================= */
 
-    const resultCode =
-      data.ResultCode ??
-      data.resultCode ??
-      data.data?.ResultCode;
+  const resultCode =
+  data.ResponseCode ??
+  data.ResultCode ??
+  data.resultCode ??
+  data.data?.ResponseCode ??
+  data.data?.ResultCode;
 
-    const status =
-      data.status ||
-      data.Status ||
-      data.data?.status;
+   const status =
+  data.ResponseDescription ||
+  data.status ||
+  data.Status ||
+  data.data?.status;
 
     const isSuccess =
       resultCode === 0 ||
       resultCode === "0" ||
       status === "SUCCESS" ||
       status === "success";
+
+     console.log("ResponseCode:", data.ResponseCode);
+console.log("ResponseDescription:", data.ResponseDescription);
+console.log("isSuccess:", isSuccess);
 
     if (!isSuccess) {
       console.log("PAYMENT FAILED - NOT CREDITING USER");
