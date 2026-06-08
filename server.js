@@ -243,13 +243,16 @@ app.post("/stk-callback", async (req, res) => {
       0
     );
 
-    const reference =
-      data.reference ||
-      data.transaction_id ||
-      data.transactionId ||
-      data.checkoutRequestID ||
-      data.data?.reference ||
-      data.data?.transaction_id;
+   const reference =
+  data.TransactionReceipt ||
+  data.TransactionID ||
+  data.reference ||
+  data.transaction_id ||
+  data.transactionId ||
+  data.CheckoutRequestID ||
+  data.checkoutRequestID ||
+  data.data?.reference ||
+  data.data?.transaction_id;
 
     /* =========================
        2. VALIDATION CHECKS
