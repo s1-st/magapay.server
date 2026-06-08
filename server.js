@@ -201,7 +201,7 @@ app.post("/stkpush", async (req, res) => {
   msisdn,
   amount,
   reference,
-  account_name: "CASHNEST",
+  account_name: "cashnest",
   callback_url: "https://magapay-server.onrender.com/stk-callback"
 })
       }
