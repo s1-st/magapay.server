@@ -220,94 +220,155 @@ app.post("/stkpush", async (req, res) => {
 ========================= */
 app.post("/stk-callback", async (req, res) => {
   try {
-      console.log("RAW BODY:", req.body);
-      console.log("KEYS:", Object.keys(req.body));
-console.log("FULL WEBHOOK:", JSON.stringify(req.body, null, 2));
-
     const data = req.body;
 
-     console.log("Msisdn field:", data.Msisdn);
-      console.log("msisdn field:", data.msisdn);
-     
+    console.log("STK CALLBACK RECEIVED:", JSON.stringify(data, null, 2));
+
+    /* =========================
+       1. EXTRACT CORE FIELDS
+    ========================= */
+
     const msisdn =
       data.Msisdn ||
       data.msisdn ||
       data.phoneNumber ||
       data.phone ||
       data.customer?.phone ||
-      data.data?.Msisdn ||
       data.data?.msisdn;
-     
-   console.log("MSISDN RECEIVED:", msisdn);
 
-    const amount = Number(data.TransactionAmount || data.amount || data.data?.amount || 0);
-    console.log("RAW AMOUNT FIELDS:");
-    console.log("TransactionAmount:", data.TransactionAmount);
-    console.log("amount:", data.amount); 
-    console.log("Final amount:", amount);
+    const amount = Number(
+      data.TransactionAmount ||
+      data.amount ||
+      data.data?.amount ||
+      0
+    );
 
-  const reference =
-  data.reference ||
-  data.transaction_id ||
-  data.transactionId ||
-  data.checkoutRequestID ||
-  data.id ||
-  data.data?.reference ||
-  data.data?.transaction_id ||
-  data.data?.transactionId ||
-  data.data?.id ||
-  `AUTO-${Date.now()}`;
-     
-    if (!reference) {
-      console.log("Missing reference");
-      return res.json({ skipped: true });
+    const reference =
+      data.reference ||
+      data.transaction_id ||
+      data.transactionId ||
+      data.checkoutRequestID ||
+      data.data?.reference ||
+      data.data?.transaction_id;
+
+    /* =========================
+       2. VALIDATION CHECKS
+    ========================= */
+
+    if (!msisdn || !amount || amount <= 0 || !reference) {
+      console.log("INVALID CALLBACK DATA - SKIPPED");
+      return res.json({ success: false, reason: "invalid_data" });
     }
 
-    // 1. CHECK DUPLICATE
+    /* =========================
+       3. CHECK PAYMENT SUCCESS
+       (ADAPT THIS TO YOUR PROVIDER)
+    ========================= */
+
+    const resultCode =
+      data.ResultCode ??
+      data.resultCode ??
+      data.data?.ResultCode;
+
+    const status =
+      data.status ||
+      data.Status ||
+      data.data?.status;
+
+    const isSuccess =
+      resultCode === 0 ||
+      resultCode === "0" ||
+      status === "SUCCESS" ||
+      status === "success";
+
+    if (!isSuccess) {
+      console.log("PAYMENT FAILED - NOT CREDITING USER");
+
+      // OPTIONAL: log failed transaction
+      await Transaction.create({
+        msisdn,
+        amount,
+        reference,
+        type: "DEPOSIT",
+        status: "FAILED",
+        balanceAfter: null
+      });
+
+      return res.json({ success: false, reason: "payment_failed" });
+    }
+
+    /* =========================
+       4. DUPLICATE CHECK
+    ========================= */
+
     const exists = await Transaction.findOne({ reference });
+
     if (exists) {
-      console.log("Duplicate ignored:", reference);
-      return res.json({ duplicate: true });
+      console.log("DUPLICATE TRANSACTION IGNORED:", reference);
+      return res.json({ success: true, reason: "duplicate" });
     }
 
-    // 2. FIND USER
-     console.log("looking for user with phone :", msisdn); 
-     
+    /* =========================
+       5. FIND USER
+    ========================= */
+
     const user = await User.findOne({ phone: msisdn });
 
     if (!user) {
-      console.log("User not found:", msisdn);
-      return res.json({ error: "User not found" });
+      console.log("USER NOT FOUND:", msisdn);
+
+      // IMPORTANT: still log transaction for debugging
+      await Transaction.create({
+        msisdn,
+        amount,
+        reference,
+        type: "DEPOSIT",
+        status: "FAILED",
+        balanceAfter: null
+      });
+
+      return res.json({ success: false, reason: "user_not_found" });
     }
 
-    // 3. UPDATE BALANCE
-    console.log("AMOUNT RECEIVED:", amount);
-    console.log("CURRENT BALANCE:", user.balance);
-     
-    user.balance += amount;
+    /* =========================
+       6. SAFE BALANCE UPDATE
+    ========================= */
 
-    console.log("BALANCE AFTER UPDATE:", user.balance);
-     
+    const oldBalance = Number(user.balance || 0);
+    const newBalance = oldBalance + amount;
+
+    user.balance = newBalance;
     await user.save();
 
-    // 4. SAVE TRANSACTION WITH BALANCE SNAPSHOT
+    /* =========================
+       7. SAVE TRANSACTION
+    ========================= */
+
     const tx = await Transaction.create({
       msisdn,
       amount,
       reference,
       type: "DEPOSIT",
       status: "SUCCESS",
-      balanceAfter: user.balance
+      balanceAfter: newBalance
     });
 
-    console.log("Transaction saved:", tx._id);
-    console.log("New balance:", user.balance);
+    console.log("TRANSACTION SAVED:", tx._id);
+    console.log("BALANCE UPDATED:", oldBalance, "→", newBalance);
 
-    res.json({ success: true });
+    /* =========================
+       8. RESPONSE
+    ========================= */
+
+    return res.json({ success: true });
 
   } catch (err) {
-    console.error("Callback error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("STK CALLBACK ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 });
 /* =========================
