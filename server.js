@@ -208,6 +208,7 @@ app.post("/stkpush", async (req, res) => {
     );
 
     const data = await response.json();
+     console.log("🔥 STK PUSH RESPONSE:", data);
     res.json(data);
 
   } catch (err) {
