@@ -148,7 +148,6 @@ app.post("/signup", async (req, res) => {
       success: false,
       message: err.message
     });
-  }
 
 // IF USER WAS REFERRED → ADD +1 TO REFERRER
 if (referredBy) {
