@@ -88,7 +88,6 @@ app.get("/", (req, res) => {
 ========================= */
 app.post("/signup", async (req, res) => {
   try {
-
     let { name, phone, email, password, referredBy } = req.body;
 
     if (!name || !phone || !email || !password) {
@@ -98,8 +97,7 @@ app.post("/signup", async (req, res) => {
       });
     }
 
-    phone = phone.trim();
-    phone = phone.replace(/\s/g, "");
+    phone = phone.trim().replace(/\s/g, "");
 
     if (phone.startsWith("+")) {
       phone = phone.substring(1);
@@ -120,7 +118,7 @@ app.post("/signup", async (req, res) => {
       });
     }
 
-    const user = await User.create({
+    await User.create({
       name,
       phone,
       email,
@@ -135,33 +133,18 @@ app.post("/signup", async (req, res) => {
       );
     }
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Account created successfully",
-      user
+      message: "Account created successfully"
     });
 
   } catch (err) {
     console.log("SIGNUP ERROR:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: err.message
+      message: "Server error"
     });
-
-// IF USER WAS REFERRED → ADD +1 TO REFERRER
-if (referredBy) {
-  await User.updateOne(
-    { referralCode: referredBy },
-    { $inc: { referrals: 1 } }
-  );
-}
-
-    res.json({ success: true, message: "Account created successfully" });
-
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
