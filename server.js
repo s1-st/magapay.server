@@ -149,7 +149,7 @@ app.post("/signup", async (req, res) => {
       message: err.message
     });
   }
-});
+
 // IF USER WAS REFERRED → ADD +1 TO REFERRER
 if (referredBy) {
   await User.updateOne(
