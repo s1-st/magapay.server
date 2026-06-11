@@ -44,6 +44,10 @@ lastProfitDate: {
   type: Number,
   default: 0
 },
+withdrawReferralExempt: {
+  type: Boolean,
+  default: false
+},   
 
 referredBy: {
   type: String,
@@ -599,6 +603,15 @@ success: false,
 message: "Insufficient balance"
 });
 }
+if (
+user.referrals < 3 &&
+!user.withdrawReferralExempt
+) {
+return res.json({
+success:false,
+message:"Refer 3 users before withdrawal"
+});
+}   
 
 // deduct balance
 user.balance -= amt;
@@ -931,6 +944,62 @@ error: err.message
 }
 
 });
+app.post(
+"/admin/allow-withdraw",
+adminAuth,
+async (req,res)=>{
+
+try{
+
+const { email } = req.body;
+
+const user =
+await User.findOne({ email });
+
+if(!user){
+return res.status(404).json({
+error:"User not found"
+});
+}
+
+user.withdrawReferralExempt = true;
+
+await user.save();
+
+res.json({
+success:true,
+message:"Withdraw restriction removed"
+});
+
+}catch(err){
+
+res.status(500).json({
+error:err.message
+});
+
+}
+
+});
+app.post(
+"/admin/restore-withdraw-rule",
+adminAuth,
+async(req,res)=>{
+
+const user =
+await User.findOne({
+email:req.body.email
+});
+
+user.withdrawReferralExempt=false;
+
+await user.save();
+
+res.json({
+success:true
+});
+
+});
+
 app.get("/admin/withdrawal-analytics", adminAuth, async (req, res) => {
 
 try {
