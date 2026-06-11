@@ -52,7 +52,9 @@ referredBy: {
 
 referralCode: {
   type: String,
-  default: () => "REF" + Math.floor(100000 + Math.random() * 900000)
+  default: () => "REF" + Math.floor(100000 + Math.random() * 900000),
+  unique: true,
+  immutable: true
 },
       
   createdAt: {
@@ -547,7 +549,7 @@ app.post("/update-profile", async (req, res) => {
 
     user.name = name;
     user.phone = phone;
-    user.referralCode = referralCode;
+    
 
     await user.save();
 
