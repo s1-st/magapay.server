@@ -601,10 +601,11 @@ user.referrals < 3 &&
 ) {
 return res.json({
 success:false,
-message:"Refer 3 users before withdrawal"
+redirect:"referrals",
+message:"You need at least 3 referrals to withdraw"
 });
 }   
-
+   
 // deduct balance
 user.balance -= amt;
 
