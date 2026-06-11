@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Withdraw</title>
+</head>
+<body style="font-family:Arial;background:#0b0f0c;color:#00ff88;text-align:center;">
+
+<h2>Withdraw Funds</h2>
+
+<!-- AMOUNT -->
+<input id="amount" placeholder="Enter amount" style="padding:10px;width:200px;"><br><br>
+
+<!-- PHONE -->
+<input id="phone" placeholder="Phone number" style="padding:10px;width:200px;"><br><br>
+
+<button onclick="withdraw()" style="padding:10px 20px;">
+Withdraw
+</button>
+
+<p id="msg"></p>
+
+<script>
+
+const API = "https://magapay-server.onrender.com";
+
+// get logged user email from storage
+const email = localStorage.getItem("email");
+
+async function withdraw() {
+
+const amount = document.getElementById("amount").value;
+const phone = document.getElementById("phone").value;
+
+if (!email) {
+document.getElementById("msg").innerText =
+"Please login first";
+return;
+}
+
+const res = await fetch(API + "/withdraw", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+email: email,
+amount: amount,
+phone: phone
+})
+});
+
+const data = await res.json();
+
+document.getElementById("msg").innerText =
+data.message || data.error;
+
+}
+
+</script>
+
+</body>
+</html>
