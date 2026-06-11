@@ -665,6 +665,64 @@ await user.save();
     res.status(500).json({ error: err.message });
   }
 });
+
+app.post("/admin/adjust-profit", adminAuth, async (req, res) => {
+
+try {
+
+const { email, amount } = req.body;
+
+const user =
+await User.findOne({ email });
+
+if (!user) {
+return res.status(404).json({
+error: "User not found"
+});
+}
+
+const profitChange =
+Number(amount);
+
+user.profit =
+Number(user.profit || 0)
++ profitChange;
+
+if (user.profit < 0) {
+user.profit = 0;
+}
+
+await user.save();
+
+await AdminLog.create({
+admin: "MAIN_ADMIN",
+action:
+profitChange >= 0
+? "ADD_PROFIT"
+: "DEDUCT_PROFIT",
+email,
+amount: profitChange,
+balanceAfter: user.balance
+});
+
+res.json({
+success: true,
+profit: user.profit
+});
+
+}
+
+catch(err){
+
+console.log(err);
+
+res.status(500).json({
+error: err.message
+});
+
+}
+
+});
 app.get("/admin/transactions", adminAuth, async (req, res) => {
   try {
     const tx = await Transaction.find().sort({ createdAt: -1 });
