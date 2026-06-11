@@ -549,9 +549,8 @@ app.post("/update-profile", async (req, res) => {
 
     user.name = name;
     user.phone = phone;
-    
-
-    await user.save();
+     
+        await user.save();
 
     res.json({ success: true, message: "Profile updated successfully" });
 
