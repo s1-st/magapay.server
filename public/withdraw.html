@@ -29,7 +29,6 @@ const email = localStorage.getItem("email");
 async function withdraw() {
 
 const amount = document.getElementById("amount").value;
-const phone = document.getElementById("phone").value;
 
 if (!email) {
 document.getElementById("msg").innerText =
@@ -43,9 +42,8 @@ headers: {
 "Content-Type": "application/json"
 },
 body: JSON.stringify({
-email: email,
-amount: amount,
-phone: phone
+  email: email,
+  amount: amount
 })
 });
 
