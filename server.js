@@ -281,7 +281,7 @@ name: user.name,
 email: user.email,
 phone: user.phone,
 balance: user.balance || 0,
-profit: user.profit || 0
+profit: user.profit || 0,
 referralCode: user.referralCode
 });
 
