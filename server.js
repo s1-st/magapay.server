@@ -26,11 +26,20 @@ const userSchema = new mongoose.Schema({
   phone: String,
   email: String,
   password: String,
-  balance: {
-    type: Number,
-    default: 0
-  },
+ balance: {
+  type: Number,
+  default: 0
+},
 
+profit: {
+  type: Number,
+  default: 0
+},
+
+lastProfitDate: {
+  type: Date,
+  default: Date.now
+},
    referrals: {
   type: Number,
   default: 0
@@ -53,6 +62,73 @@ referralCode: {
 });
 
 const User = mongoose.model("User", userSchema);
+function getProfit(balance) {
+
+if (balance >= 100000)
+return { amount: 30000, period: 7 };
+
+if (balance >= 50000)
+return { amount: 15000, period: 7 };
+
+if (balance >= 40000)
+return { amount: 12000, period: 7 };
+
+if (balance >= 30000)
+return { amount: 8500, period: 7 };
+
+if (balance >= 20000)
+return { amount: 6000, period: 7 };
+
+if (balance >= 10000)
+return { amount: 3500, period: 7 };
+
+if (balance >= 5000)
+return { amount: 1500, period: 7 };
+
+if (balance >= 2500)
+return { amount: 100, period: 1 };
+
+return { amount: 0, period: 0 };
+
+}
+async function updateProfit(user) {
+
+const now = new Date();
+
+const days =
+Math.floor(
+(now - user.lastProfitDate) /
+(1000 * 60 * 60 * 24)
+);
+
+const plan =
+getProfit(user.balance);
+
+if (plan.amount === 0)
+return;
+
+if (days >= plan.period) {
+
+const cycles =
+Math.floor(
+days / plan.period
+);
+
+const earned =
+cycles * plan.amount;
+
+user.balance += earned;
+
+user.profit += earned;
+
+user.lastProfitDate =
+new Date();
+
+await user.save();
+
+}
+
+}
 
 /* =========================
    TRANSACTION MODEL
@@ -189,6 +265,8 @@ app.get("/user", async (req, res) => {
     }
 
     const user = await User.findOne({ email });
+     
+     await updateProfit(user);
 
     if (!user) {
       return res.status(404).json({
@@ -196,12 +274,13 @@ app.get("/user", async (req, res) => {
       });
     }
 
-    res.json({
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      balance: user.balance || 0
-    });
+ res.json({
+name: user.name,
+email: user.email,
+phone: user.phone,
+balance: user.balance || 0,
+profit: user.profit || 0
+});
 
   } catch (err) {
     console.error(err);
