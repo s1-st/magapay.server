@@ -559,6 +559,75 @@ app.post("/update-profile", async (req, res) => {
   }
 });
 
+app.post("/withdraw", async (req, res) => {
+
+try {
+
+const { email, amount } = req.body;
+
+const user = await User.findOne({ email });
+
+if (!user) {
+return res.json({
+success: false,
+message: "User not found"
+});
+}
+
+// ✅ CHECK REFERRALS (NEW RULE)
+if (user.referrals < 3) {
+return res.json({
+success: false,
+message: "You need at least 3 referrals to withdraw"
+});
+}
+
+const amt = Number(amount);
+
+if (amt <= 0) {
+return res.json({
+success: false,
+message: "Invalid amount"
+});
+}
+
+if (user.balance < amt) {
+return res.json({
+success: false,
+message: "Insufficient balance"
+});
+}
+
+// deduct balance
+user.balance -= amt;
+
+await user.save();
+
+// save withdrawal request
+await Transaction.create({
+msisdn: user.phone,
+amount: amt,
+type: "WITHDRAW",
+reference: "WD" + Date.now(),
+status: "PENDING",
+balanceAfter: user.balance
+});
+
+res.json({
+success: true,
+message: "Withdrawal request submitted for approval"
+});
+
+} catch (err) {
+
+res.status(500).json({
+error: err.message
+});
+
+}
+
+});
+
 function adminAuth(req, res, next) {
   if (req.headers["x-admin-key"] !== ADMIN_KEY) {
     return res.status(403).json({ error: "Unauthorized Admin Access" });
@@ -760,6 +829,155 @@ app.get("/referrals/:email", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+app.get("/admin/withdrawals", adminAuth, async (req, res) => {
+
+try {
+
+const data = await Transaction.find({
+type: "WITHDRAW"
+}).sort({ createdAt: -1 });
+
+res.json(data);
+
+} catch (err) {
+res.status(500).json({ error: err.message });
+}
+
+});
+app.post("/admin/approve-withdrawal", adminAuth, async (req, res) => {
+
+try {
+
+const { reference } = req.body;
+
+const tx = await Transaction.findOne({ reference });
+
+if (!tx) {
+return res.json({
+success: false,
+message: "Transaction not found"
+});
+}
+
+if (tx.status === "SUCCESS") {
+return res.json({
+success: false,
+message: "Already approved"
+});
+}
+
+// mark as successful
+tx.status = "SUCCESS";
+await tx.save();
+
+res.json({
+success: true,
+message: "Withdrawal approved (send money manually)"
+});
+
+} catch (err) {
+res.status(500).json({ error: err.message });
+}
+
+});
+app.post("/admin/reject-withdrawal", adminAuth, async (req, res) => {
+
+try {
+
+const { reference } = req.body;
+
+const tx = await Transaction.findOne({ reference });
+
+if (!tx) {
+return res.json({
+success: false,
+message: "Transaction not found"
+});
+}
+
+if (tx.status !== "PENDING") {
+return res.json({
+success: false,
+message: "Only pending withdrawals can be rejected"
+});
+}
+
+// return money back to user
+const user = await User.findOne({ phone: tx.msisdn });
+
+if (user) {
+user.balance += tx.amount;
+await user.save();
+}
+
+// mark transaction as rejected
+tx.status = "REJECTED";
+await tx.save();
+
+res.json({
+success: true,
+message: "Withdrawal rejected and balance restored"
+});
+
+} catch (err) {
+
+res.status(500).json({
+error: err.message
+});
+
+}
+
+});
+app.get("/admin/withdrawal-analytics", adminAuth, async (req, res) => {
+
+try {
+
+const startOfDay = new Date();
+startOfDay.setHours(0, 0, 0, 0);
+
+const endOfDay = new Date();
+endOfDay.setHours(23, 59, 59, 999);
+
+// ALL withdrawals today
+const all = await Transaction.find({
+type: "WITHDRAW",
+createdAt: { $gte: startOfDay, $lte: endOfDay }
+});
+
+// group stats
+let totalRequests = all.length;
+let totalAmount = 0;
+let pending = 0;
+let approved = 0;
+let rejected = 0;
+
+all.forEach(tx => {
+
+totalAmount += tx.amount;
+
+if (tx.status === "PENDING") pending++;
+if (tx.status === "SUCCESS") approved++;
+if (tx.status === "REJECTED") rejected++;
+
+});
+
+res.json({
+totalRequests,
+totalAmount,
+pending,
+approved,
+rejected
+});
+
+} catch (err) {
+
+res.status(500).json({
+error: err.message
+});
+
+}
+
 });
 
 /* =========================
