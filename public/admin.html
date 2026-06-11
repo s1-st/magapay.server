@@ -171,3 +171,84 @@ await adjustProfit(-amount);
 
 </body>
 </html>
+
+<h3>Withdrawals</h3>
+<div id="withdrawals"></div>
+
+<h4>📊 Withdrawal Analytics (Today)</h4>
+
+<div id="analytics" style="border:1px solid #ccc;padding:10px;margin-bottom:10px;">
+Loading...
+</div>
+
+<script>
+async function loadWithdrawals() {
+
+const res = await fetch(API + "/admin/withdrawals", {
+headers: {
+"x-admin-key": ADMIN_KEY
+}
+});
+
+const data = await res.json();
+
+document.getElementById("withdrawals").innerHTML =
+data.map(tx => `
+  <div style="border:1px solid #ccc;padding:10px;margin:5px;">
+    <b>${tx.msisdn}</b><br>
+    Amount: ${tx.amount}<br>
+    Status: ${tx.status}<br>
+    Ref: ${tx.reference}<br>
+
+ ${tx.status === "PENDING" ? `
+  <button onclick="approve('${tx.reference}')">
+    Approve
+  </button>
+
+  <button style="background:red;color:white;" onclick="reject('${tx.reference}')">
+    Reject
+  </button>
+` : ""}
+  </div>
+`).join("");
+
+}
+
+async function approve(ref) {
+
+await fetch(API + "/admin/approve-withdrawal", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"x-admin-key": ADMIN_KEY
+},
+body: JSON.stringify({ reference: ref })
+});
+
+alert("Approved");
+
+loadWithdrawals();
+
+}
+
+loadWithdrawals();
+
+  async function reject(ref) {
+
+const res = await fetch(API + "/admin/reject-withdrawal", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"x-admin-key": ADMIN_KEY
+},
+body: JSON.stringify({ reference: ref })
+});
+
+const data = await res.json();
+
+alert(data.message);
+
+loadWithdrawals();
+
+}
+</script>
