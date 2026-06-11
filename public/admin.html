@@ -20,6 +20,14 @@
 <button onclick="add()">Add Balance</button>
 <button onclick="deduct()">Deduct Balance</button>
 
+<hr>
+
+<input id="profitAmount" placeholder="Profit amount">
+<br><br>
+
+<button onclick="addProfit()">Add Profit</button>
+<button onclick="deductProfit()">Deduct Profit</button>
+  
 <script>
 
 const API = "https://magapay-server.onrender.com";
@@ -103,7 +111,62 @@ async function deduct() {
 
   alert("Balance deducted successfully");
 }
+async function adjustProfit(amount) {
 
+if (!selectedEmail)
+return alert("Search user first");
+
+const res =
+await fetch(
+API + "/admin/adjust-profit",
+{
+method:"POST",
+
+headers: headers,
+
+body: JSON.stringify({
+email: selectedEmail,
+amount: amount
+})
+}
+);
+
+const data =
+await res.json();
+
+console.log(data);
+
+alert("Profit updated");
+
+}
+
+async function addProfit() {
+
+const amount =
+Number(
+document
+.getElementById(
+"profitAmount"
+).value
+);
+
+await adjustProfit(amount);
+
+}
+
+async function deductProfit() {
+
+const amount =
+Number(
+document
+.getElementById(
+"profitAmount"
+).value
+);
+
+await adjustProfit(-amount);
+
+}
 </script>
 
 </body>
