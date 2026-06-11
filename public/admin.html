@@ -27,6 +27,12 @@
 
 <button onclick="addProfit()">Add Profit</button>
 <button onclick="deductProfit()">Deduct Profit</button>
+
+  <button onclick="allowWithdraw()">
+Allow Withdraw (Skip Referral Rule)
+</button>
+
+<p id="result"></p>
   
 <script>
 
@@ -251,4 +257,40 @@ alert(data.message);
 loadWithdrawals();
 
 }
+</script>
+<script>
+
+async function allowWithdraw(){
+
+const email =
+document.getElementById("search").value;
+
+const res =
+await fetch(
+"/admin/allow-withdraw",
+{
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"x-admin-key":"YOUR_ADMIN_KEY"
+},
+
+body:JSON.stringify({
+email
+})
+
+});
+
+const data =
+await res.json();
+
+document.getElementById(
+"result"
+).innerText =
+data.message ||
+data.error;
+
+}
+
 </script>
