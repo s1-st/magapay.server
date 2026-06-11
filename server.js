@@ -82,7 +82,7 @@ if (balance >= 20000)
 return { amount: 6000, period: 7 };
 
 if (balance >= 10000)
-return { amount: 3500, period: 7 };
+return { amount: 3000, period: 7 };
 
 if (balance >= 5000)
 return { amount: 1500, period: 7 };
