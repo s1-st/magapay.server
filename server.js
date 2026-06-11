@@ -580,14 +580,6 @@ message: "User not found"
 });
 }
 
-// ✅ CHECK REFERRALS (NEW RULE)
-if (user.referrals < 3) {
-return res.json({
-success: false,
-message: "You need at least 3 referrals to withdraw"
-});
-}
-
 const amt = Number(amount);
 
 if (amt <= 0) {
