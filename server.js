@@ -888,49 +888,61 @@ res.status(500).json({ error: err.message });
 }
 
 });
-app.post("/admin/reject-withdrawal", adminAuth, async (req, res) => {
+app.post("/admin/reject-withdraw", adminAuth, async (req, res) => {
 
 try {
 
 const { reference } = req.body;
 
-const tx = await Transaction.findOne({ reference });
+/* FIND TRANSACTION */
+const tx = await Transaction.findOne({
+reference
+});
 
 if (!tx) {
-return res.json({
-success: false,
-message: "Transaction not found"
+return res.status(404).json({
+error:"Transaction not found"
 });
 }
 
-if (tx.status !== "PENDING") {
+/* AVOID DOUBLE REFUND */
+if (tx.status === "REJECTED") {
 return res.json({
-success: false,
-message: "Only pending withdrawals can be rejected"
+success:false,
+message:"Already rejected"
 });
 }
 
-// return money back to user
-const user = await User.findOne({ phone: tx.msisdn });
+/* FIND USER */
+const user = await User.findOne({
+phone: tx.msisdn
+});
 
-if (user) {
+if (!user) {
+return res.status(404).json({
+error:"User not found"
+});
+}
+
+/* RESTORE BALANCE */
 user.balance += tx.amount;
-await user.save();
-}
 
-// mark transaction as rejected
+await user.save();
+
+/* UPDATE STATUS */
 tx.status = "REJECTED";
+
 await tx.save();
 
 res.json({
-success: true,
-message: "Withdrawal rejected and balance restored"
+success:true,
+message:"Withdrawal rejected and balance restored"
 });
 
-} catch (err) {
+} catch(err){
 
 res.status(500).json({
-error: err.message
+error:err.message
 });
 
 }
