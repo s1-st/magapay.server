@@ -950,62 +950,75 @@ error:err.message
 app.post(
 "/admin/reject-withdraw",
 adminAuth,
-async(req,res)=>{
+async (req,res)=>{
 
 try{
 
 const tx =
 await Transaction.findOne({
-reference:
-req.body.reference
+reference:req.body.reference
 });
 
 if(!tx){
-
-return res.status(404)
-.json({
-error:
-"Transaction not found"
+return res.status(404).json({
+error:"Transaction not found"
 });
-
 }
 
+/* PREVENT DOUBLE RESTORE */
 if(
-tx.status ===
-"REJECTED"
+tx.status === "REJECTED"
 ){
-
 return res.json({
 success:false,
-message:
-"Already rejected"
+message:"Already rejected"
 });
-
 }
 
+/* FIND USER */
+const user =
+await User.findOne({
+phone:tx.msisdn
+});
+
+if(!user){
+return res.status(404).json({
+error:"User not found"
+});
+}
+
+/* RESTORE PROFIT */
+user.profit =
+Number(user.profit || 0)
++
+Number(tx.amount);
+
+await user.save();
+
+/* MARK REJECTED */
 tx.status =
 "REJECTED";
+
+tx.balanceAfter =
+user.profit;
 
 await tx.save();
 
 res.json({
 success:true,
 message:
-"Withdrawal rejected"
+"Withdrawal rejected and profit restored"
 });
 
 }catch(err){
 
-res.status(500)
-.json({
-error:
-err.message
+res.status(500).json({
+error:err.message
 });
 
 }
 
 });
-
 app.post(
 "/admin/allow-withdraw",
 adminAuth,
