@@ -923,30 +923,6 @@ message:"User not found"
 });
 }
 
-/* CHECK PROFIT */
-if(
-Number(
-user.profit || 0
-)
-<
-tx.amount
-){
-return res.json({
-success:false,
-message:"Insufficient profit"
-});
-}
-
-/* DEDUCT PROFIT */
-user.profit =
-Number(
-user.profit || 0
-)
--
-tx.amount;
-
-await user.save();
-
 /* APPROVE */
 tx.status =
 "SUCCESS";
