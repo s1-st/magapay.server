@@ -887,6 +887,8 @@ try{
 const { reference } =
 req.body;
 
+console.log("APPROVE CALLED:", reference);
+
 const tx =
 await Transaction.findOne({
 reference
