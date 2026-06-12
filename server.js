@@ -879,94 +879,90 @@ res.status(500).json({ error: err.message });
 }
 
 });
-app.post("/admin/approve-withdrawal", adminAuth, async (req, res) => {
+app.post(
+"/admin/approve-withdrawal",
+adminAuth,
+async (req,res)=>{
 
-try {
+try{
 
-const { reference } = req.body;
+const { reference } =
+req.body;
 
-const tx = await Transaction.findOne({ reference });
-
-if (!tx) {
-return res.json({
-success: false,
-message: "Transaction not found"
-});
-}
-
-if (tx.status === "SUCCESS") {
-return res.json({
-success: false,
-message: "Already approved"
-});
-}
-
-// mark as successful
-tx.status = "SUCCESS";
-await tx.save();
-
-res.json({
-success: true,
-message: "Withdrawal approved (send money manually)"
-});
-
-} catch (err) {
-res.status(500).json({ error: err.message });
-}
-
-});
-app.post("/admin/reject-withdraw", adminAuth, async (req, res) => {
-
-try {
-
-const { reference } = req.body;
-
-/* FIND TRANSACTION */
-const tx = await Transaction.findOne({
+const tx =
+await Transaction.findOne({
 reference
 });
 
-if (!tx) {
-return res.status(404).json({
-error:"Transaction not found"
-});
-}
-
-/* AVOID DOUBLE REFUND */
-if (tx.status === "REJECTED") {
+if(!tx){
 return res.json({
 success:false,
-message:"Already rejected"
+message:"Transaction not found"
 });
 }
 
-/* FIND USER */
-const user = await User.findOne({
-phone: tx.msisdn
-});
-
-if (!user) {
-return res.status(404).json({
-error:"User not found"
+if(
+tx.status ===
+"SUCCESS"
+){
+return res.json({
+success:false,
+message:"Already approved"
 });
 }
 
-/* RESTORE BALANCE */
-user.balance += tx.amount;
+const user =
+await User.findOne({
+phone:tx.msisdn
+});
+
+if(!user){
+return res.json({
+success:false,
+message:"User not found"
+});
+}
+
+/* CHECK PROFIT */
+if(
+Number(
+user.profit || 0
+)
+<
+tx.amount
+){
+return res.json({
+success:false,
+message:"Insufficient profit"
+});
+}
+
+/* DEDUCT PROFIT */
+user.profit =
+Number(
+user.profit || 0
+)
+-
+tx.amount;
 
 await user.save();
 
-/* UPDATE STATUS */
-tx.status = "REJECTED";
+/* APPROVE */
+tx.status =
+"SUCCESS";
+
+tx.balanceAfter =
+user.profit;
 
 await tx.save();
 
 res.json({
 success:true,
-message:"Withdrawal rejected and balance restored"
+message:
+"Withdrawal approved"
 });
 
-} catch(err){
+}catch(err){
 
 res.status(500).json({
 error:err.message
@@ -975,6 +971,65 @@ error:err.message
 }
 
 });
+app.post(
+"/admin/reject-withdraw",
+adminAuth,
+async(req,res)=>{
+
+try{
+
+const tx =
+await Transaction.findOne({
+reference:
+req.body.reference
+});
+
+if(!tx){
+
+return res.status(404)
+.json({
+error:
+"Transaction not found"
+});
+
+}
+
+if(
+tx.status ===
+"REJECTED"
+){
+
+return res.json({
+success:false,
+message:
+"Already rejected"
+});
+
+}
+
+tx.status =
+"REJECTED";
+
+await tx.save();
+
+res.json({
+success:true,
+message:
+"Withdrawal rejected"
+});
+
+}catch(err){
+
+res.status(500)
+.json({
+error:
+err.message
+});
+
+}
+
+});
+
 app.post(
 "/admin/allow-withdraw",
 adminAuth,
