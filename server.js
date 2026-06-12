@@ -571,65 +571,91 @@ try {
 
 const { email, amount } = req.body;
 
-const user = await User.findOne({ email });
+const user =
+await User.findOne({ email });
 
 if (!user) {
 return res.json({
-success: false,
-message: "User not found"
+success:false,
+message:"User not found"
 });
 }
 
-const amt = Number(amount);
+const amt =
+Number(amount);
 
 if (amt <= 0) {
 return res.json({
-success: false,
-message: "Invalid amount"
+success:false,
+message:"Invalid amount"
 });
 }
 
-if (user.balance < amt) {
-return res.json({
-success: false,
-message: "Insufficient balance"
-});
-}
+/* REFERRAL CHECK FIRST */
 if (
-user.referrals < 3 &&
-!user.withdrawReferralExempt
+Number(user.referrals || 0) < 3 &&
+user.withdrawReferralExempt !== true
 ) {
+
 return res.json({
 success:false,
 redirect:"referrals",
 message:"You need at least 3 referrals to withdraw"
 });
-}   
-   
-// deduct balance
-user.balance -= amt;
+
+}
+
+/* CHECK PROFIT */
+if (
+Number(user.profit || 0) < amt
+) {
+
+return res.json({
+success:false,
+message:"Insufficient profit available"
+});
+
+}
+
+/* DEDUCT PROFIT ONLY */
+user.profit =
+Number(user.profit || 0)
+- amt;
 
 await user.save();
 
-// save withdrawal request
+/* SAVE REQUEST */
 await Transaction.create({
-msisdn: user.phone,
-amount: amt,
-type: "WITHDRAW",
-reference: "WD" + Date.now(),
-status: "PENDING",
-balanceAfter: user.balance
+
+msisdn:user.phone,
+
+amount:amt,
+
+type:"WITHDRAW",
+
+reference:
+"WD" + Date.now(),
+
+status:"PENDING",
+
+balanceAfter:
+user.profit
+
 });
 
 res.json({
-success: true,
-message: "Withdrawal request submitted for approval"
+
+success:true,
+
+message:
+"Withdrawal request submitted for approval"
+
 });
 
-} catch (err) {
+} catch(err){
 
 res.status(500).json({
-error: err.message
+error:err.message
 });
 
 }
