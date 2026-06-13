@@ -834,28 +834,168 @@ app.get("/db-count", async (req, res) => {
 });
 
 app.post("/update-profile", async (req, res) => {
-  try {
-    const { email, name, phone, referralCode } = req.body;
 
-    const user = await User.findOne({ email });
+try{
 
-    if (!user) {
-      return res.json({ success: false, message: "User not found" });
-    }
+let {
+email,
+name,
+phone,
+referralCode
+} = req.body;
 
-    user.name = name;
-    user.phone = phone;
-     
-        await user.save();
 
-    res.json({ success: true, message: "Profile updated successfully" });
+/* VALIDATE */
 
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
+if(!email){
+
+return res.json({
+
+success:false,
+
+message:
+"Email required"
+
 });
 
+}
+
+
+/* CLEAN EMAIL */
+
+email =
+email
+.trim()
+.toLowerCase();
+
+
+/* CLEAN PHONE */
+
+if(phone){
+
+phone =
+phone
+.trim()
+.replace(
+/\s/g,
+""
+);
+
+if(
+phone.startsWith("+")
+){
+
+phone =
+phone.substring(1);
+
+}
+
+if(
+phone.startsWith("0")
+){
+
+phone =
+"254" +
+phone.substring(1);
+
+}
+
+}
+
+
+/* FIND USER */
+
+const user =
+await User.findOne({
+email
+});
+
+
+if(!user){
+
+return res.json({
+
+success:false,
+
+message:
+"User not found"
+
+});
+
+}
+
+
+/* UPDATE */
+
+if(name)
+user.name =
+name.trim();
+
+if(phone)
+user.phone =
+phone;
+
+if(
+referralCode
+){
+
+user.referralCode =
+referralCode
+.trim();
+
+}
+
+
+await user.save();
+
+
+return res.json({
+
+success:true,
+
+message:
+"Profile updated successfully",
+
+user:{
+
+name:
+user.name,
+
+email:
+user.email,
+
+phone:
+user.phone,
+
+referralCode:
+user.referralCode
+
+}
+
+});
+
+}
+catch(err){
+
+console.log(
+"UPDATE PROFILE ERROR:",
+err
+);
+
+return res
+.status(500)
+.json({
+
+success:false,
+
+message:
+"Failed to update profile"
+
+});
+
+}
+
+});
 app.post("/withdraw", async (req, res) => {
 
 try {
