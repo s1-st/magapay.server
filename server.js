@@ -178,6 +178,9 @@ email,
 password,
 referredBy
 } = req.body;
+   
+   console.log("BODY RECEIVED:", req.body);
+console.log("REFERRED BY:", referredBy);
 
 /* REQUIRED */
 if(
