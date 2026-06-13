@@ -449,6 +449,39 @@ success:false
 
 });
 
+app.post(
+"/fix-verification",
+async(req,res)=>{
+
+try{
+
+await User.updateMany(
+{},
+{
+$set:{
+verified:true
+}
+}
+);
+
+res.json({
+success:true,
+message:
+"All users verified"
+});
+
+}catch(err){
+
+console.log(err);
+
+res.json({
+success:false
+});
+
+}
+
+});
+
 /* =========================
    GET USER
 ========================= */
