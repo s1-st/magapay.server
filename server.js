@@ -169,67 +169,140 @@ app.get("/", (req, res) => {
    SIGNUP
 ========================= */
 app.post("/signup", async (req, res) => {
-  try {
-    let { name, phone, email, password, referredBy } = req.body;
+try {
 
-    if (!name || !phone || !email || !password) {
-      return res.json({
-        success: false,
-        message: "All fields required"
-      });
-    }
+let {
+name,
+phone,
+email,
+password,
+referredBy
+} = req.body;
 
-    phone = phone.trim().replace(/\s/g, "");
+/* VALIDATION */
+if (
+!name ||
+!phone ||
+!email ||
+!password
+){
+return res.json({
+success:false,
+message:"All fields required"
+});
+}
 
-    if (phone.startsWith("+")) {
-      phone = phone.substring(1);
-    }
+/* CLEAN PHONE */
+phone = phone.trim()
+.replace(/\s/g,"");
 
-    if (phone.startsWith("0")) {
-      phone = "254" + phone.substring(1);
-    }
+if(phone.startsWith("+")){
+phone = phone.substring(1);
+}
 
-    email = email.trim().toLowerCase();
+if(phone.startsWith("0")){
+phone = "254" + phone.substring(1);
+}
 
-    const existing = await User.findOne({ email });
+/* CLEAN EMAIL */
+email =
+email
+.trim()
+.toLowerCase();
 
-    if (existing) {
-      return res.json({
-        success: false,
-        message: "User already exists"
-      });
-    }
-
-    await User.create({
-      name,
-      phone,
-      email,
-      password,
-      referredBy: referredBy || null
-    });
-
-    if (referredBy) {
-      await User.updateOne(
-        { referralCode: referredBy },
-        { $inc: { referrals: 1 } }
-      );
-    }
-
-    return res.json({
-      success: true,
-      message: "Account created successfully"
-    });
-
-  } catch (err) {
-    console.log("SIGNUP ERROR:", err);
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
-  }
+/* EXISTING USER */
+const existing =
+await User.findOne({
+email
 });
 
+if(existing){
+
+return res.json({
+success:false,
+message:"User already exists"
+});
+
+}
+
+/* VALIDATE REFERRAL */
+let sponsor = null;
+
+if(referredBy){
+
+sponsor =
+await User.findOne({
+referralCode:
+referredBy
+});
+
+if(!sponsor){
+
+referredBy = null;
+
+}
+
+}
+
+/* CREATE USER */
+const user =
+await User.create({
+
+name,
+phone,
+email,
+password,
+
+referredBy:
+referredBy || null
+
+});
+
+/* INCREMENT REFERRALS */
+if(sponsor){
+
+sponsor.referrals =
+Number(
+sponsor.referrals || 0
+) + 1;
+
+await sponsor.save();
+
+}
+
+return res.json({
+
+success:true,
+
+message:
+"Account created successfully",
+
+phone:
+user.phone
+
+});
+
+}catch(err){
+
+console.log(
+"SIGNUP ERROR:",
+err
+);
+
+return res
+.status(500)
+.json({
+
+success:false,
+
+message:
+"Server error"
+
+});
+
+}
+
+});
 /* =========================
    LOGIN
 ========================= */
