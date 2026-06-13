@@ -179,8 +179,8 @@ password,
 referredBy
 } = req.body;
 
-/* VALIDATION */
-if (
+/* REQUIRED */
+if(
 !name ||
 !phone ||
 !email ||
@@ -192,25 +192,29 @@ message:"All fields required"
 });
 }
 
-/* CLEAN PHONE */
-phone = phone.trim()
+/* CLEAN DATA */
+phone =
+phone
+.trim()
 .replace(/\s/g,"");
 
 if(phone.startsWith("+")){
-phone = phone.substring(1);
+phone =
+phone.substring(1);
 }
 
 if(phone.startsWith("0")){
-phone = "254" + phone.substring(1);
+phone =
+"254" +
+phone.substring(1);
 }
 
-/* CLEAN EMAIL */
 email =
 email
 .trim()
 .toLowerCase();
 
-/* EXISTING USER */
+/* CHECK EXISTING */
 const existing =
 await User.findOne({
 email
@@ -220,55 +224,74 @@ if(existing){
 
 return res.json({
 success:false,
-message:"User already exists"
+message:
+"User already exists"
 });
 
 }
 
 /* VALIDATE REFERRAL */
-let sponsor = null;
+let finalReferral =
+null;
 
 if(referredBy){
 
-sponsor =
+const refUser =
 await User.findOne({
 referralCode:
 referredBy
 });
 
-if(!sponsor){
+if(refUser){
 
-referredBy = null;
+finalReferral =
+referredBy;
+
+/* INCREASE COUNT */
+refUser.referrals =
+Number(
+refUser.referrals || 0
+) + 1;
+
+await refUser.save();
+
+console.log(
+"REFERRAL COUNTED:",
+referredBy
+);
+
+}else{
+
+console.log(
+"INVALID REF:",
+referredBy
+);
 
 }
 
 }
 
 /* CREATE USER */
-const user =
+const newUser =
 await User.create({
 
 name,
+
 phone,
+
 email,
+
 password,
 
 referredBy:
-referredBy || null
+finalReferral
 
 });
 
-/* INCREMENT REFERRALS */
-if(sponsor){
-
-sponsor.referrals =
-Number(
-sponsor.referrals || 0
-) + 1;
-
-await sponsor.save();
-
-}
+console.log(
+"NEW USER:",
+newUser.email
+);
 
 return res.json({
 
@@ -278,7 +301,7 @@ message:
 "Account created successfully",
 
 phone:
-user.phone
+newUser.phone
 
 });
 
@@ -289,15 +312,11 @@ console.log(
 err
 );
 
-return res
-.status(500)
+res.status(500)
 .json({
-
 success:false,
-
 message:
 "Server error"
-
 });
 
 }
