@@ -448,6 +448,72 @@ success:false
 }
 
 });
+app.post(
+"/complete-referral",
+async(req,res)=>{
+
+try{
+
+const {
+email,
+referredBy
+} = req.body;
+
+if(
+!email ||
+!referredBy
+){
+return res.json({
+success:true
+});
+}
+
+const user =
+await User.findOne({
+email
+});
+
+if(
+!user ||
+user.referredBy
+){
+return res.json({
+success:true
+});
+}
+
+user.referredBy =
+referredBy;
+
+await user.save();
+
+await User.updateOne(
+{
+referralCode:
+referredBy
+},
+{
+$inc:{
+referrals:1
+}
+}
+);
+
+res.json({
+success:true
+});
+
+}catch(err){
+
+console.log(err);
+
+res.json({
+success:false
+});
+
+}
+
+});
 
 /* =========================
    GET USER
