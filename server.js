@@ -295,29 +295,40 @@ message:
 /* =========================
    LOGIN
 ========================= */
-app.post("/login", async (req,res)=>{
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-try{
+    const user = await User.findOne({ email, password });
 
-const {
-email,
-password
-} = req.body;
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "Invalid credentials"
+      });
+    }
 
-const user =
-await User.findOne({
-email,
-password
+    return res.json({
+      success: true,
+      message: "Login successful",
+      user: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        balance: user.balance,
+        profit: user.profit,
+        referralCode: user.referralCode
+      }
+    });
+
+  } catch (err) {
+    console.log("LOGIN ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
 });
-
-if(!user){
-
-return res.json({
-success:false,
-message:
-"Invalid credentials"
-});
-
 /* =========================
    GET USER
 ========================= */
@@ -326,33 +337,27 @@ app.get("/user", async (req, res) => {
     const email = req.query.email;
 
     if (!email) {
-      return res.status(400).json({
-        error: "Email required"
-      });
+      return res.status(400).json({ error: "Email required" });
     }
 
     const user = await User.findOne({ email });
-     
+
     if (!user) {
-      return res.status(404).json({
-        error: "User not found"
-      });
+      return res.status(404).json({ error: "User not found" });
     }
 
- res.json({
-name: user.name,
-email: user.email,
-phone: user.phone,
-balance: user.balance || 0,
-profit: user.profit || 0,
-referralCode: user.referralCode
-});
+    res.json({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      balance: user.balance || 0,
+      profit: user.profit || 0,
+      referralCode: user.referralCode
+    });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      error: "Server error"
-    });
+    res.status(500).json({ error: "Server error" });
   }
 });
 /* =========================
