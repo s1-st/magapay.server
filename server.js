@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema({
   phone: String,
   email: String,
   password: String,
+
+   verified: {
+type: Boolean,
+default: false
+},
+   
  balance: {
   type: Number,
   default: 0
@@ -249,7 +255,6 @@ referrer?.email
 }
 
 /* CREATE USER */
-const user =
 await User.create({
 
 name,
@@ -258,23 +263,19 @@ email,
 password,
 
 referredBy:
-referrer
-? referrer.referralCode
-: null
+referredBy || null,
+
+verified:false
 
 });
 
-/* INCREASE COUNT */
+/* REMOVE THIS */
+/*
 if(referrer){
-
-referrer.referrals =
-Number(
-referrer.referrals || 0
-) + 1;
-
+referrer.referrals += 1;
 await referrer.save();
-
 }
+*/
 
 res.json({
 success:true,
@@ -303,27 +304,141 @@ message:
    LOGIN
 ========================= */
 app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+try {
 
-    const user = await User.findOne({ email, password });
+const {
+email,
+password
+} = req.body;
 
-    if (!user) {
-      return res.json({ success: false, message: "Invalid credentials" });
-    }
+const user =
+await User.findOne({
+email,
+password
+});
 
-    res.json({
-      success: true,
-      message: "Login successful",
-      name: user.name,
-      phone: user.phone,
-      email: user.email
-    });
+if(!user){
+return res.json({
+success:false,
+message:
+"Invalid credentials"
+});
+}
 
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
+/* BLOCK UNVERIFIED */
+if(!user.verified){
+
+return res.json({
+success:false,
+needsVerification:true,
+message:
+"Verify OTP first"
+});
+
+}
+
+res.json({
+success:true,
+message:
+"Login successful",
+name:user.name,
+phone:user.phone,
+email:user.email
+});
+
+}catch(err){
+
+console.log(err);
+
+res.status(500).json({
+success:false,
+message:"Server error"
+});
+
+}
+});
+
+app.post(
+"/complete-verification",
+async (req,res)=>{
+
+try{
+
+const {
+email
+} = req.body;
+
+const user =
+await User.findOne({
+email
+});
+
+if(!user){
+
+return res.json({
+success:false
+});
+
+}
+
+/* AVOID DOUBLE REFERRAL */
+if(
+user.verified
+){
+
+return res.json({
+success:true
+});
+
+}
+
+/* VERIFY USER */
+user.verified =
+true;
+
+await user.save();
+
+/* COUNT REFERRAL */
+if(
+user.referredBy
+){
+
+await User.updateOne(
+{
+referralCode:
+user.referredBy
+},
+{
+$inc:{
+referrals:1
+}
+}
+);
+
+console.log(
+"REFERRAL COUNTED:",
+user.referredBy
+);
+
+}
+
+res.json({
+success:true
+});
+
+}catch(err){
+
+console.log(
+err
+);
+
+res.status(500)
+.json({
+success:false
+});
+
+}
+
 });
 
 /* =========================
