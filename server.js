@@ -303,8 +303,9 @@ message:
 /* =========================
    LOGIN
 ========================= */
-app.post("/login", async (req, res) => {
-try {
+app.post("/login", async (req,res)=>{
+
+try{
 
 const {
 email,
@@ -318,15 +319,19 @@ password
 });
 
 if(!user){
+
 return res.json({
 success:false,
 message:
 "Invalid credentials"
 });
+
 }
 
-/* BLOCK UNVERIFIED */
-if(!user.verified){
+/* ALLOW OLD USERS */
+if(
+user.verified === false
+){
 
 return res.json({
 success:false,
@@ -350,12 +355,15 @@ email:user.email
 
 console.log(err);
 
-res.status(500).json({
+res.status(500)
+.json({
 success:false,
-message:"Server error"
+message:
+"Server error"
 });
 
 }
+
 });
 
 app.post(
