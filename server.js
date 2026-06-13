@@ -260,8 +260,6 @@ password,
 referredBy:
 referredBy || null,
 
-verified:false
-
 });
 
 /* REMOVE THIS */
@@ -319,46 +317,6 @@ return res.json({
 success:false,
 message:
 "Invalid credentials"
-});
-
-}
-
-/* ALLOW OLD USERS */
-if(
-user.verified === false
-){
-
-return res.json({
-success:false,
-needsVerification:true,
-message:
-"Verify OTP first"
-});
-
-}
-
-res.json({
-success:true,
-message:
-"Login successful",
-name:user.name,
-phone:user.phone,
-email:user.email
-});
-
-}catch(err){
-
-console.log(err);
-
-res.status(500)
-.json({
-success:false,
-message:
-"Server error"
-});
-
-}
-
 });
 
 app.post(
