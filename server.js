@@ -26,11 +26,6 @@ const userSchema = new mongoose.Schema({
   phone: String,
   email: String,
   password: String,
-
-   verified: {
-type: Boolean,
-default: false
-},
    
  balance: {
   type: Number,
