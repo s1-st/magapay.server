@@ -449,40 +449,6 @@ success:false
 
 });
 
-app.get(
-"/fix-verification",
-async(req,res)=>{
-
-try{
-
-const result =
-await User.updateMany(
-{},
-{
-$set:{
-verified:true
-}
-}
-);
-
-res.json({
-success:true,
-updated:
-result.modifiedCount
-});
-
-}catch(err){
-
-console.log(err);
-
-res.status(500).json({
-success:false
-});
-
-}
-
-});
-
 /* =========================
    GET USER
 ========================= */
