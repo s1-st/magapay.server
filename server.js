@@ -169,6 +169,7 @@ app.get("/", (req, res) => {
    SIGNUP
 ========================= */
 app.post("/signup", async (req, res) => {
+
 try {
 
 let {
@@ -178,27 +179,26 @@ email,
 password,
 referredBy
 } = req.body;
-   
-   console.log("BODY RECEIVED:", req.body);
-console.log("REFERRED BY:", referredBy);
 
-/* REQUIRED */
-if(
+console.log(
+"REFERRED BY:",
+referredBy
+);
+
+if (
 !name ||
 !phone ||
 !email ||
 !password
-){
+) {
 return res.json({
 success:false,
 message:"All fields required"
 });
 }
 
-/* CLEAN DATA */
 phone =
-phone
-.trim()
+phone.trim()
 .replace(/\s/g,"");
 
 if(phone.startsWith("+")){
@@ -213,99 +213,73 @@ phone.substring(1);
 }
 
 email =
-email
-.trim()
+email.trim()
 .toLowerCase();
 
-/* CHECK EXISTING */
+/* USER EXISTS */
 const existing =
 await User.findOne({
 email
 });
 
 if(existing){
-
 return res.json({
 success:false,
 message:
 "User already exists"
 });
-
 }
 
-/* VALIDATE REFERRAL */
-let finalReferral =
-null;
+/* FIND REFERRER */
+let referrer = null;
 
 if(referredBy){
 
-const refUser =
+referrer =
 await User.findOne({
 referralCode:
 referredBy
 });
 
-if(refUser){
-
-finalReferral =
-referredBy;
-
-/* INCREASE COUNT */
-refUser.referrals =
-Number(
-refUser.referrals || 0
-) + 1;
-
-await refUser.save();
-
 console.log(
-"REFERRAL COUNTED:",
-referredBy
+"REFERRER FOUND:",
+referrer?.email
 );
-
-}else{
-
-console.log(
-"INVALID REF:",
-referredBy
-);
-
-}
 
 }
 
 /* CREATE USER */
-const newUser =
+const user =
 await User.create({
 
 name,
-
 phone,
-
 email,
-
 password,
 
 referredBy:
-finalReferral
+referrer
+? referrer.referralCode
+: null
 
 });
 
-console.log(
-"NEW USER:",
-newUser.email
-);
+/* INCREASE COUNT */
+if(referrer){
 
-return res.json({
+referrer.referrals =
+Number(
+referrer.referrals || 0
+) + 1;
 
+await referrer.save();
+
+}
+
+res.json({
 success:true,
-
 message:
-"Account created successfully",
-
-phone:
-newUser.phone
-
+"Account created successfully"
 });
 
 }catch(err){
