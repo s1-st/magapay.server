@@ -449,12 +449,13 @@ success:false
 
 });
 
-app.post(
+app.get(
 "/fix-verification",
 async(req,res)=>{
 
 try{
 
+const result =
 await User.updateMany(
 {},
 {
@@ -466,15 +467,15 @@ verified:true
 
 res.json({
 success:true,
-message:
-"All users verified"
+updated:
+result.modifiedCount
 });
 
 }catch(err){
 
 console.log(err);
 
-res.json({
+res.status(500).json({
 success:false
 });
 
