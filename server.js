@@ -165,6 +165,7 @@ app.get("/", (req, res) => {
   res.send("MegaPay server is running");
 });
 
+
 /* =========================
    SIGNUP
 ========================= */
@@ -180,11 +181,8 @@ password,
 referredBy
 } = req.body;
 
-console.log(
-"REFERRED BY:",
-referredBy
-);
 
+/* VALIDATION */
 if (
 !name ||
 !phone ||
@@ -197,32 +195,45 @@ message:"All fields required"
 });
 }
 
+
+/* CLEAN PHONE */
 phone =
-phone.trim()
+phone
+.trim()
 .replace(/\s/g,"");
 
-if(phone.startsWith("+")){
+if (
+phone.startsWith("+")
+) {
 phone =
 phone.substring(1);
 }
 
-if(phone.startsWith("0")){
+if (
+phone.startsWith("0")
+) {
 phone =
 "254" +
 phone.substring(1);
 }
 
+
+/* CLEAN EMAIL */
 email =
-email.trim()
+email
+.trim()
 .toLowerCase();
 
-/* USER EXISTS */
-const existing =
+
+/* CHECK EMAIL EXISTS */
+const emailExists =
 await User.findOne({
 email
 });
 
-if(existing){
+if (
+emailExists
+) {
 return res.json({
 success:false,
 message:
@@ -230,10 +241,30 @@ message:
 });
 }
 
+
+/* CHECK PHONE EXISTS */
+const phoneExists =
+await User.findOne({
+phone
+});
+
+if (
+phoneExists
+) {
+return res.json({
+success:false,
+message:
+"Phone already exists"
+});
+}
+
+
 /* FIND REFERRER */
 let referrer = null;
 
-if(referredBy){
+if (
+referredBy
+) {
 
 referrer =
 await User.findOne({
@@ -241,38 +272,89 @@ referralCode:
 referredBy
 });
 
-console.log(
-"REFERRER FOUND:",
-referrer?.email
-);
-
 }
 
+
+/* GENERATE REFERRAL CODE */
+const referralCode =
+Math.random()
+.toString(36)
+.substring(2,8)
+.toUpperCase();
+
+
 /* CREATE USER */
+const user =
 await User.create({
 
-name,
+name:
+name.trim(),
+
 phone,
+
 email,
+
 password,
 
+balance:0,
+
+profit:0,
+
+referrals:0,
+
+referralCode,
+
 referredBy:
-referredBy || null,
+referrer
+? referredBy
+: null
 
 });
 
-/* REMOVE THIS */
-/*
-if(referrer){
-referrer.referrals += 1;
-await referrer.save();
-}
-*/
 
-res.json({
+/* UPDATE REFERRER */
+if (
+referrer
+) {
+
+referrer.referrals =
+(referrer.referrals || 0)
++ 1;
+
+await referrer.save();
+
+}
+
+
+return res.json({
+
 success:true,
+
 message:
-"Account created successfully"
+"Account created successfully",
+
+user:{
+
+name:
+user.name,
+
+email:
+user.email,
+
+phone:
+user.phone,
+
+balance:
+user.balance,
+
+profit:
+user.profit,
+
+referralCode:
+user.referralCode
+
+}
+
 });
 
 }catch(err){
@@ -282,83 +364,228 @@ console.log(
 err
 );
 
-res.status(500)
+return res
+.status(500)
 .json({
+
 success:false,
+
 message:
 "Server error"
+
 });
 
 }
 
 });
+
+
 /* =========================
    LOGIN
 ========================= */
 app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
 
-    const user = await User.findOne({ email, password });
+try {
 
-    if (!user) {
-      return res.json({
-        success: false,
-        message: "Invalid credentials"
-      });
-    }
+let {
+email,
+password
+} = req.body;
 
-    return res.json({
-      success: true,
-      message: "Login successful",
-      user: {
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        balance: user.balance,
-        profit: user.profit,
-        referralCode: user.referralCode
-      }
-    });
 
-  } catch (err) {
-    console.log("LOGIN ERROR:", err);
-    res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
-  }
+/* CLEAN EMAIL */
+email =
+email
+.trim()
+.toLowerCase();
+
+
+const user =
+await User.findOne({
+
+email,
+password
+
 });
+
+
+if (
+!user
+) {
+
+return res.json({
+
+success:false,
+
+message:
+"Invalid credentials"
+
+});
+
+}
+
+
+return res.json({
+
+success:true,
+
+message:
+"Login successful",
+
+user:{
+
+name:
+user.name,
+
+email:
+user.email,
+
+phone:
+user.phone,
+
+balance:
+user.balance || 0,
+
+profit:
+user.profit || 0,
+
+referralCode:
+user.referralCode
+
+}
+
+});
+
+}catch(err){
+
+console.log(
+"LOGIN ERROR:",
+err
+);
+
+return res
+.status(500)
+.json({
+
+success:false,
+
+message:
+"Server error"
+
+});
+
+}
+
+});
+
+
 /* =========================
    GET USER
 ========================= */
-app.get("/user", async (req, res) => {
-  try {
-    const email = req.query.email;
+/* MATCHES fetch("/api/user") */
+app.get("/api/user", async (req, res) => {
 
-    if (!email) {
-      return res.status(400).json({ error: "Email required" });
-    }
+try {
 
-    const user = await User.findOne({ email });
+let email =
+req.query.email;
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
 
-    res.json({
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      balance: user.balance || 0,
-      profit: user.profit || 0,
-      referralCode: user.referralCode
-    });
+if (
+!email
+) {
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
+return res
+.status(400)
+.json({
+
+success:false,
+
+message:
+"Email required"
+
+});
+
+}
+
+
+email =
+email
+.trim()
+.toLowerCase();
+
+
+const user =
+await User.findOne({
+email
+});
+
+
+if (
+!user
+) {
+
+return res
+.status(404)
+.json({
+
+success:false,
+
+message:
+"User not found"
+
+});
+
+}
+
+
+return res.json({
+
+success:true,
+
+name:
+user.name,
+
+email:
+user.email,
+
+phone:
+user.phone,
+
+balance:
+user.balance || 0,
+
+profit:
+user.profit || 0,
+
+referrals:
+user.referrals || 0,
+
+referralCode:
+user.referralCode
+
+});
+
+}catch(err){
+
+console.log(
+"GET USER ERROR:",
+err
+);
+
+return res
+.status(500)
+.json({
+
+success:false,
+
+message:
+"Server error"
+
+});
+
+}
+
 });
 /* =========================
    STK PUSH
