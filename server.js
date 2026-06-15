@@ -262,15 +262,28 @@ message:
 /* FIND REFERRER */
 let referrer = null;
 
-if (
-referredBy
-) {
+if(referredBy){
 
 referrer =
 await User.findOne({
 referralCode:
 referredBy
 });
+
+/* PREVENT SELF REFERRAL */
+
+if(
+referrer &&
+referrer.email === email
+){
+
+return res.json({
+success:false,
+message:
+"You cannot refer yourself"
+});
+
+}
 
 }
 
@@ -313,18 +326,21 @@ referrer
 
 
 /* UPDATE REFERRER */
-if (
-referrer
-) {
+if(referrer){
 
-referrer.referrals =
-(referrer.referrals || 0)
-+ 1;
-
-await referrer.save();
+await User.updateOne(
+{
+_id:
+referrer._id
+},
+{
+$inc:{
+referrals:1
+}
+}
+);
 
 }
-
 
 return res.json({
 
