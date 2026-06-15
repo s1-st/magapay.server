@@ -319,7 +319,7 @@ referralCode,
 
 referredBy:
 referrer
-? referredBy
+? referrer.referralCode
 : null
 
 });
