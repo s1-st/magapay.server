@@ -603,6 +603,98 @@ message:
 }
 
 });
+
+app.put(
+"/api/update-profile",
+
+async (
+req,
+res
+)=>{
+
+try{
+
+const {
+email,
+name,
+phone
+}
+=
+req.body;
+
+if(
+!email
+){
+
+return res
+.status(400)
+.json({
+
+message:
+"Email required"
+
+});
+
+}
+
+const user =
+await User.findOne({
+
+email
+
+});
+
+if(
+!user
+){
+
+return res
+.status(404)
+.json({
+
+message:
+"User not found"
+
+});
+
+}
+
+user.name =
+name;
+
+user.phone =
+phone;
+
+await user.save();
+
+res.json({
+
+message:
+"Profile updated",
+
+user
+
+});
+
+}
+catch(err){
+
+console.log(
+err
+);
+
+res
+.status(500)
+.json({
+
+message:
+"Server error"
+
+});
+
+}
+
+});
 /* =========================
    STK PUSH
 ========================= */
