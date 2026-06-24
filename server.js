@@ -21,53 +21,80 @@ mongoose.connect(process.env.MONGO_URL)
 /* =========================
    USER MODEL
 ========================= */
-const userSchema = new mongoose.Schema({
-  name: String,
-  phone: String,
-  email: String,
-  password: String,
-    balance: {
-  type: Number,
-  default: 0
+
+const userSchema =
+new mongoose.Schema({
+
+name:String,
+
+phone:String,
+
+email:String,
+
+password:String,
+
+balance:{
+type:Number,
+default:0
 },
 
-profit: {
-  type: Number,
-  default: 0
+profit:{
+type:Number,
+default:0
 },
 
-lastProfitDate: {
-  type: Date,
-  default: Date.now
-},
-   referrals: {
-  type: Number,
-  default: 0
-},
-withdrawReferralExempt: {
-  type: Boolean,
-  default: false
-},   
-
-referredBy: {
-  type: String,
-  default: null
+lastProfitDate:{
+type:Date,
+default:Date.now
 },
 
-referralCode: {
-  type: String,
-  default: () => "REF" + Math.floor(100000 + Math.random() * 900000),
-  unique: true,
-  immutable: true
+/* START COUNTING 30 DAYS
+FROM FIRST DEPOSIT */
+
+investmentStartDate:{
+type:Date,
+default:null
 },
-      
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+
+referrals:{
+type:Number,
+default:0
+},
+
+withdrawReferralExempt:{
+type:Boolean,
+default:false
+},
+
+referredBy:{
+type:String,
+default:null
+},
+
+referralCode:{
+type:String,
+
+default:()=>
+"REF" +
+Math.floor(
+100000 +
+Math.random()*900000
+),
+
+unique:true,
+
+immutable:true
+},
+
+createdAt:{
+type:Date,
+default:Date.now
+}
+
 });
 
 const User = mongoose.model("User", userSchema);
+
 function getProfit(balance) {
 
 if (balance >= 100000)
@@ -94,45 +121,115 @@ return { amount: 1500, period: 7 };
 if (balance >= 2500)
 return { amount: 100, period: 1 };
 
-return { amount: 0, period: 0 };
+return {
+amount:0,
+period:0
+};
 
 }
+
 async function updateProfit(user) {
 
-const now = new Date();
+const now =
+new Date();
 
-const days =
+/* DAYS SINCE LAST PROFIT */
+
+const daysPassed =
 Math.floor(
-(now - user.lastProfitDate) /
-(1000 * 60 * 60 * 24)
+(
+now -
+new Date(
+user.lastProfitDate
+)
+)
+/
+(
+1000 *
+60 *
+60 *
+24
+)
 );
 
-const plan =
-getProfit(user.balance);
-
-if (plan.amount === 0)
+if (
+daysPassed <= 0
+)
 return;
 
-if (days >= plan.period) {
+/* DAYS SINCE ACCOUNT START */
 
-const cycles =
+const totalDays =
 Math.floor(
-days / plan.period
+(
+now -
+new Date(
+user.investmentStartDate
+)
+)
+/
+(
+1000 *
+60 *
+60 *
+24
+)
+);
+
+/* STOP AFTER 30 DAYS */
+
+if (
+totalDays >= 30
+)
+return;
+
+const plan =
+getProfit(
+user.balance
+);
+
+if (
+plan.amount === 0
+)
+return;
+
+/* WEEKLY → DAILY */
+
+const dailyProfit =
+plan.amount /
+plan.period;
+
+/*
+don't exceed 30 days
+*/
+
+const allowedDays =
+Math.min(
+daysPassed,
+30 - totalDays
 );
 
 const earned =
-cycles * plan.amount;
+dailyProfit *
+allowedDays;
 
-user.balance += earned;
+/* FIXED RETURNS */
 
-user.profit += earned;
+user.profit =
+Number(
+user.profit || 0
+)
++
+earned;
+
+/* DON'T TOUCH BALANCE */
+
+/* UPDATE DATE */
 
 user.lastProfitDate =
-new Date();
+now;
 
 await user.save();
-
-}
 
 }
 
@@ -852,15 +949,43 @@ console.log("isSuccess:", isSuccess);
       return res.json({ success: false, reason: "user_not_found" });
     }
 
-    /* =========================
-       6. SAFE BALANCE UPDATE
-    ========================= */
+ /* =========================
+6. SAFE BALANCE UPDATE
+========================= */
 
-    const oldBalance = Number(user.balance || 0);
-    const newBalance = oldBalance + amount;
+const oldBalance =
+Number(
+user.balance || 0
+);
 
-    user.balance = newBalance;
-    await user.save();
+const newBalance =
+oldBalance +
+amount;
+
+/* ADD DEPOSIT */
+
+user.balance =
+newBalance;
+
+/* START 30 DAY TIMER
+ONLY FIRST DEPOSIT */
+
+if (
+!user.investmentStartDate
+) {
+
+user.investmentStartDate =
+new Date();
+
+}
+
+/* RESET DAILY PROFIT TIMER */
+
+user.lastProfitDate =
+new Date();
+
+await user.save();
+
 
     /* =========================
        7. SAVE TRANSACTION
