@@ -872,6 +872,48 @@ app.post("/stk-callback", async (req, res) => {
       return res.json({ success: false, reason: "invalid_data" });
     }
 
+/* =========================
+INVESTMENT LIMITS
+========================= */
+
+if (
+amount < 2500
+) {
+
+console.log(
+"BELOW MINIMUM INVESTMENT"
+);
+
+return res.json({
+
+success:false,
+
+message:
+"Minimum investment is KES 2500"
+
+});
+
+}
+
+if (
+amount > 100000
+) {
+
+console.log(
+"ABOVE MAXIMUM INVESTMENT"
+);
+
+return res.json({
+
+success:false,
+
+message:
+"Maximum investment is KES 100000"
+
+});
+
+}
+     
     /* =========================
        3. CHECK PAYMENT SUCCESS
        (ADAPT THIS TO YOUR PROVIDER)
