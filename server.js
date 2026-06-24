@@ -1108,74 +1108,288 @@ app.post("/withdraw", async (req, res) => {
 
 try {
 
-const { email, amount } = req.body;
+const {
+email,
+amount,
+withdrawType // "profit" or "balance"
+} = req.body;
 
 const user =
 await User.findOne({ email });
 
 if (!user) {
+
 return res.json({
 success:false,
 message:"User not found"
 });
+
 }
 
 const amt =
 Number(amount);
 
-if (amt <= 0) {
+if (
+isNaN(amt) ||
+amt <= 0
+) {
+
 return res.json({
 success:false,
 message:"Invalid amount"
 });
+
 }
 
-/* REFERRAL CHECK FIRST */
+/* =========================
+1. USER MUST HAVE DEPOSITED
+========================= */
+
 if (
-Number(user.referrals || 0) < 3 &&
-user.withdrawReferralExempt !== true
+Number(user.totalDeposited || 0) <= 0
 ) {
 
 return res.json({
+
 success:false,
-redirect:"referrals",
-message:"You need at least 3 referrals to withdraw"
+
+message:
+"Deposit first to be able to withdraw"
+
 });
 
 }
 
-/* CHECK PROFIT */
+/* =========================
+WITHDRAW INVESTED BALANCE
+========================= */
+
 if (
-Number(user.profit || 0) < amt
+withdrawType === "balance"
+) {
+
+const depositDate =
+new Date(
+user.firstDepositDate
+);
+
+const now =
+new Date();
+
+const days =
+Math.floor(
+(
+now -
+depositDate
+)
+/(
+1000 *
+60 *
+60 *
+24
+)
+);
+
+if (
+days < 30
 ) {
 
 return res.json({
+
 success:false,
-message:"Insufficient profit available"
+
+message:
+`Invested money is in lock savings account for ${
+30 - days
+} more days before eligible for withdrawal`
+
 });
 
 }
 
-/* DEDUCT PROFIT ONLY */
-user.profit =
-Number(user.profit || 0)
-- amt;
+if (
+Number(user.balance || 0)
+< amt
+) {
+
+return res.json({
+
+success:false,
+
+message:
+"Insufficient balance"
+
+});
+
+}
+
+user.balance =
+Number(
+user.balance || 0
+)
+-
+amt;
 
 await user.save();
 
-/* SAVE REQUEST */
 await Transaction.create({
 
-msisdn:user.phone,
+msisdn:
+user.phone,
 
-amount:amt,
+amount:
+amt,
 
-type:"WITHDRAW",
+type:
+"BALANCE_WITHDRAW",
 
 reference:
-"WD" + Date.now(),
+"BW" +
+Date.now(),
 
-status:"PENDING",
+status:
+"PENDING",
+
+balanceAfter:
+user.balance
+
+});
+
+return res.json({
+
+success:true,
+
+message:
+"Balance withdrawal submitted"
+
+});
+
+}
+
+/* =========================
+PROFIT MUST BE 7 DAYS OLD
+========================= */
+
+const profitDate =
+new Date(
+user.lastProfitDate
+);
+
+const today =
+new Date();
+
+const profitDays =
+Math.floor(
+(
+today -
+profitDate
+)
+/(
+1000 *
+60 *
+60 *
+24
+)
+);
+
+if (
+profitDays < 7
+) {
+
+return res.json({
+
+success:false,
+
+message:
+"Profit should be 7 or more days old before eligible for withdrawal"
+
+});
+
+}
+
+/* =========================
+REFERRAL CHECK
+========================= */
+
+if (
+
+Number(
+user.referrals || 0
+) < 3
+
+&&
+
+user.withdrawReferralExempt
+!== true
+
+) {
+
+return res.json({
+
+success:false,
+
+redirect:
+"referrals",
+
+message:
+"Must refer 3 people before withdrawal"
+
+});
+
+}
+
+/* =========================
+CHECK PROFIT
+========================= */
+
+if (
+Number(
+user.profit || 0
+)
+< amt
+) {
+
+return res.json({
+
+success:false,
+
+message:
+"Insufficient profit available"
+
+});
+
+}
+
+/* DEDUCT PROFIT */
+
+user.profit =
+Number(
+user.profit || 0
+)
+-
+amt;
+
+await user.save();
+
+/* SAVE */
+
+await Transaction.create({
+
+msisdn:
+user.phone,
+
+amount:
+amt,
+
+type:
+"WITHDRAW",
+
+reference:
+"WD" +
+Date.now(),
+
+status:
+"PENDING",
 
 balanceAfter:
 user.profit
@@ -1191,10 +1405,16 @@ message:
 
 });
 
-} catch(err){
+}
+
+catch(err){
 
 res.status(500).json({
-error:err.message
+
+success:false,
+error:
+err.message
+
 });
 
 }
