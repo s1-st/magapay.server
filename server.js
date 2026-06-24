@@ -1266,12 +1266,20 @@ message:"Invalid amount"
 
 }
 
-/* =========================
-1. USER MUST HAVE DEPOSITED
-========================= */
+/* USER MUST HAVE FUNDS */
 
 if (
-Number(user.totalDeposited || 0) <= 0
+
+Number(
+user.balance || 0
+) <= 0
+
+&&
+
+Number(
+user.profit || 0
+) <= 0
+
 ) {
 
 return res.json({
@@ -1285,6 +1293,7 @@ message:
 
 }
 
+
 /* =========================
 WITHDRAW INVESTED BALANCE
 ========================= */
@@ -1294,9 +1303,21 @@ withdrawType === "balance"
 ) {
 
 const depositDate =
+
+user.investmentStartDate
+
+?
+
 new Date(
-user.firstDepositDate
+user.investmentStartDate
+)
+
+:
+
+new Date(
+user.createdAt
 );
+
 
 const now =
 new Date();
@@ -1396,9 +1417,21 @@ PROFIT MUST BE 7 DAYS OLD
 ========================= */
 
 const profitDate =
+
+user.investmentStartDate
+
+?
+
+new Date(
+user.investmentStartDate
+)
+
+:
+
 new Date(
 user.lastProfitDate
 );
+
 
 const today =
 new Date();
