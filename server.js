@@ -357,27 +357,65 @@ message:
 
 
 /* FIND REFERRER */
+
 let referrer = null;
 
-if(referredBy){
+if (
+referredBy
+) {
+
+referredBy =
+String(
+referredBy
+)
+.trim()
+.toUpperCase();
+
+console.log(
+"REFERRED BY:",
+referredBy
+);
 
 referrer =
+
 await User.findOne({
+
 referralCode:
 referredBy
+
 });
+
+if(
+!referrer
+){
+
+return res.json({
+
+success:false,
+
+message:
+"Invalid referral code"
+
+});
+
+}
 
 /* PREVENT SELF REFERRAL */
 
 if(
-referrer &&
-referrer.email === email
+
+referrer.email ===
+email
+
 ){
 
 return res.json({
+
 success:false,
+
 message:
 "You cannot refer yourself"
+
 });
 
 }
