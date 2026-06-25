@@ -360,21 +360,26 @@ message:
 
 let referrer = null;
 
-if (
+if(
 referredBy
-) {
+){
 
 referredBy =
+
 String(
 referredBy
 )
+
 .trim()
+
 .toUpperCase();
 
 console.log(
 "REFERRED BY:",
 referredBy
 );
+
+/* FIND OWNER */
 
 referrer =
 
@@ -384,6 +389,15 @@ referralCode:
 referredBy
 
 });
+
+console.log(
+"REFERRER FOUND:",
+referrer
+? referrer.email
+: "NOT FOUND"
+);
+
+/* INVALID CODE */
 
 if(
 !referrer
@@ -404,7 +418,9 @@ message:
 
 if(
 
-referrer.email ===
+referrer.email
+===
+
 email
 
 ){
@@ -419,6 +435,13 @@ message:
 });
 
 }
+
+}
+else{
+
+console.log(
+"NO REFERRAL USED"
+);
 
 }
 
@@ -458,6 +481,21 @@ referrer
 : null
 
 });
+   /* DEBUG */
+
+console.log(
+"USER CREATED"
+);
+
+console.log(
+"user referralCode:",
+user.referralCode
+);
+
+console.log(
+"user referredBy:",
+user.referredBy
+);
 
 
 /* UPDATE REFERRER */
