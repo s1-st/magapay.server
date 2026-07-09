@@ -727,6 +727,7 @@ message:
 
 }
 
+await updateProfit(user);
 
 return res.json({
 
